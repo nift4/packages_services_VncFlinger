@@ -78,7 +78,6 @@ class AndroidDesktop : public rfb::SDesktop,
     sp<VirtualDisplay> mVirtualDisplay;
 
     // Primary display
-    sp<IBinder> mMainDpy;
     DisplayInfo mDisplayInfo;
 
     // Virtual input device

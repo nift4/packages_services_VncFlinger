@@ -52,12 +52,17 @@ VirtualDisplay::VirtualDisplay(DisplayInfo* info, uint32_t width, uint32_t heigh
 
     mDpy = SurfaceComposerClient::createDisplay(String8("VNC-VirtualDisplay"), false /*secure*/);
 
-    SurfaceComposerClient::openGlobalTransaction();
-    SurfaceComposerClient::setDisplaySurface(mDpy, mProducer);
+    const auto displayToken = SurfaceComposerClient::getInternalDisplayToken();
+    if (displayToken == nullptr) {
+        ALOGE("Failed to get display token\n");
+        return;
+    }
 
-    SurfaceComposerClient::setDisplayProjection(mDpy, 0, mSourceRect, displayRect);
-    SurfaceComposerClient::setDisplayLayerStack(mDpy, 0);  // default stack
-    SurfaceComposerClient::closeGlobalTransaction();
+    SurfaceComposerClient::Transaction t;
+    t.setDisplaySurface(displayToken, mProducer);
+    t.setDisplayProjection(displayToken, 0, mSourceRect, displayRect);
+    t.setDisplayLayerStack(displayToken, 0);  // default stack
+    t.apply();
 
     ALOGV("Virtual display (%ux%u [viewport=%ux%u] created", width, height, displayRect.getWidth(),
           displayRect.getHeight());

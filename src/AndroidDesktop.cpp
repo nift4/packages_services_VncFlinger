@@ -38,8 +38,6 @@ AndroidDesktop::~AndroidDesktop() {
 }
 
 void AndroidDesktop::start(rfb::VNCServer* vs) {
-    mMainDpy = SurfaceComposerClient::getBuiltInDisplay(ISurfaceComposer::eDisplayIdMain);
-
     mServer = vs;
 
     mPixels = new AndroidPixelBuffer();
@@ -157,7 +155,13 @@ void AndroidDesktop::pointerEvent(const rfb::Point& pos, int buttonMask) {
 
 // refresh the display dimensions
 status_t AndroidDesktop::updateDisplayInfo() {
-    status_t err = SurfaceComposerClient::getDisplayInfo(mMainDpy, &mDisplayInfo);
+    const auto displayToken = SurfaceComposerClient::getInternalDisplayToken();
+    if (displayToken == nullptr) {
+        ALOGE("Failed to get display token\n");
+        return -1;
+    }
+
+    status_t err = SurfaceComposerClient::getDisplayInfo(displayToken, &mDisplayInfo);
     if (err != NO_ERROR) {
         ALOGE("Failed to get display characteristics\n");
         return err;

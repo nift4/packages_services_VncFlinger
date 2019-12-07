@@ -9,9 +9,6 @@ LOCAL_SRC_FILES := \
     src/VirtualDisplay.cpp \
     src/main.cpp
 
-#LOCAL_SRC_FILES += \
-#    aidl/org/chemlab/IVNCService.aidl
-
 LOCAL_C_INCLUDES += \
     $(LOCAL_PATH)/src \
     external/tigervnc/common \
@@ -25,16 +22,16 @@ LOCAL_SHARED_LIBRARIES := \
     libssl \
     libui \
     libutils \
-    libz
+    libz \
+    liblog
 
 LOCAL_STATIC_LIBRARIES += \
     libtigervnc
 
 LOCAL_CFLAGS := -DVNCFLINGER_VERSION="0.1"
-LOCAL_CFLAGS += -Ofast -Werror -std=c++11 -fexceptions
+LOCAL_CFLAGS += -Ofast -Werror -fexceptions -Wno-implicit-fallthrough
 
 LOCAL_CFLAGS += -DLOG_NDEBUG=0
-#LOCAL_CXX := /usr/bin/include-what-you-use
 
 LOCAL_INIT_RC := etc/vncflinger.rc
 

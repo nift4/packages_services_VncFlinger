@@ -15,7 +15,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#define LOG_TAG "VirtualDisplay"
+#define LOG_TAG "VNCFlinger:VirtualDisplay"
 #include <utils/Log.h>
 
 #include <gui/BufferQueue.h>
@@ -50,18 +50,12 @@ VirtualDisplay::VirtualDisplay(DisplayInfo* info, uint32_t width, uint32_t heigh
 
     mCpuConsumer->setFrameAvailableListener(listener);
 
-    mDpy = SurfaceComposerClient::createDisplay(String8("VNC-VirtualDisplay"), false /*secure*/);
-
-    const auto displayToken = SurfaceComposerClient::getInternalDisplayToken();
-    if (displayToken == nullptr) {
-        ALOGE("Failed to get display token\n");
-        return;
-    }
+    mDisplayToken = SurfaceComposerClient::createDisplay(String8("VNC-VirtualDisplay"), false /*secure*/);
 
     SurfaceComposerClient::Transaction t;
-    t.setDisplaySurface(displayToken, mProducer);
-    t.setDisplayProjection(displayToken, 0, mSourceRect, displayRect);
-    t.setDisplayLayerStack(displayToken, 0);  // default stack
+    t.setDisplaySurface(mDisplayToken, mProducer);
+    t.setDisplayProjection(mDisplayToken, 0, mSourceRect, displayRect);
+    t.setDisplayLayerStack(mDisplayToken, 0);  // default stack
     t.apply();
 
     ALOGV("Virtual display (%ux%u [viewport=%ux%u] created", width, height, displayRect.getWidth(),
@@ -71,7 +65,7 @@ VirtualDisplay::VirtualDisplay(DisplayInfo* info, uint32_t width, uint32_t heigh
 VirtualDisplay::~VirtualDisplay() {
     mCpuConsumer.clear();
     mProducer.clear();
-    SurfaceComposerClient::destroyDisplay(mDpy);
+    SurfaceComposerClient::destroyDisplay(mDisplayToken);
 
     ALOGV("Virtual display destroyed");
 }

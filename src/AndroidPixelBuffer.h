@@ -58,6 +58,8 @@ class AndroidPixelBuffer : public RefBase, public rfb::ManagedPixelBuffer {
 
     Rect getSourceRect();
 
+    void reset();
+
   private:
     static bool isDisplayRotated(uint8_t orientation);
 

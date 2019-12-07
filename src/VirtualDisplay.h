@@ -59,7 +59,7 @@ class VirtualDisplay : public RefBase {
     sp<CpuConsumer> mCpuConsumer;
 
     // Virtual display
-    sp<IBinder> mDpy;
+    sp<IBinder> mDisplayToken;
 
     sp<CpuConsumer::FrameAvailableListener> mListener;
 

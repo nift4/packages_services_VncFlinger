@@ -1,4 +1,4 @@
-#define LOG_TAG "AndroidDesktop"
+#define LOG_TAG "VNCFlinger:AndroidDesktop"
 #include <utils/Log.h>
 
 #include <fcntl.h>
@@ -57,6 +57,7 @@ void AndroidDesktop::stop() {
     ALOGV("Shutting down");
 
     mServer->setPixelBuffer(0);
+    mPixels->reset();
 
     mVirtualDisplay.clear();
     mPixels.clear();
@@ -76,8 +77,8 @@ void AndroidDesktop::processFrames() {
     }
 
     mFrameNumber = imgBuffer.frameNumber;
-    ALOGV("processFrame: [%lu] format: %x (%dx%d, stride=%d)", mFrameNumber, imgBuffer.format,
-          imgBuffer.width, imgBuffer.height, imgBuffer.stride);
+    //ALOGV("processFrame: [%lu] format: %x (%dx%d, stride=%d)", mFrameNumber, imgBuffer.format,
+    //      imgBuffer.width, imgBuffer.height, imgBuffer.stride);
 
     // we don't know if there was a stride change until we get
     // a buffer from the queue. if it changed, we need to resize
@@ -128,8 +129,8 @@ unsigned int AndroidDesktop::setScreenLayout(int reqWidth, int reqHeight,
 }
 
 // cpuconsumer frame listener, called from binder thread
-void AndroidDesktop::onFrameAvailable(const BufferItem& item) {
-    ALOGV("onFrameAvailable: [%lu] mTimestamp=%ld", item.mFrameNumber, item.mTimestamp);
+void AndroidDesktop::onFrameAvailable(const BufferItem&) {
+    //ALOGV("onFrameAvailable: [%lu] mTimestamp=%ld", item.mFrameNumber, item.mTimestamp);
 
     notify();
 }
@@ -144,10 +145,11 @@ void AndroidDesktop::pointerEvent(const rfb::Point& pos, int buttonMask) {
         // outside viewport
         return;
     }
-    uint32_t x = pos.x * ((float)(mDisplayRect.getWidth()) / (float)mPixels->width());
+    uint32_t spaceX = abs(((float)(mDisplayRect.getWidth() - mPixels->width())) / 2);
+    uint32_t x = pos.x - spaceX;
     uint32_t y = pos.y * ((float)(mDisplayRect.getHeight()) / (float)mPixels->height());
 
-    ALOGV("pointer xlate x1=%d y1=%d x2=%d y2=%d", pos.x, pos.y, x, y);
+    //ALOGV("pointer xlate x1=%d y1=%d x2=%d y2=%d", pos.x, pos.y, x, y);
 
     mServer->setCursorPos(rfb::Point(x, y));
     mInputDevice->pointerEvent(buttonMask, x, y);
@@ -166,6 +168,7 @@ status_t AndroidDesktop::updateDisplayInfo() {
         ALOGE("Failed to get display characteristics\n");
         return err;
     }
+    //ALOGV("updateDisplayInfo: [%d:%d]", mDisplayInfo.w, mDisplayInfo.h);
 
     mPixels->setDisplayInfo(&mDisplayInfo);
 

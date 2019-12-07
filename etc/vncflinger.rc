@@ -1,4 +1,4 @@
-service vncflinger /system/bin/vncflinger SecurityTypes=None
+service vncflinger /system/bin/vncflinger -SecurityTypes=None
     class late_start
     disabled
     user system

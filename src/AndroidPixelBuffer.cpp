@@ -15,7 +15,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#define LOG_TAG "AndroidPixelBuffer"
+#define LOG_TAG "VNCFlinger:AndroidPixelBuffer"
 #include <utils/Log.h>
 
 #include <ui/DisplayInfo.h>
@@ -116,4 +116,9 @@ void AndroidPixelBuffer::setDisplayInfo(DisplayInfo* info) {
 
 Rect AndroidPixelBuffer::getSourceRect() {
     return Rect(mSourceWidth, mSourceHeight);
+}
+
+void AndroidPixelBuffer::reset() {
+    mSourceWidth = 0;
+    mSourceHeight = 0;
 }

@@ -166,7 +166,7 @@ int main(int argc, char** argv) {
             uint64_t eventVal;
             int status = read(eventFd, &eventVal, sizeof(eventVal));
             if (status > 0 && eventVal > 0) {
-                ALOGV("status=%d eventval=%lu", status, eventVal);
+                //ALOGV("status=%d eventval=%lu", status, eventVal);
                 desktop->processFrames();
             }
         }

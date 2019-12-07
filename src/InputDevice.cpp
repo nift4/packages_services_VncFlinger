@@ -15,7 +15,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#define LOG_TAG "VNC-InputDevice"
+#define LOG_TAG "VNCFlinger:InputDevice"
 #include <utils/Log.h>
 
 #include <future>
@@ -239,7 +239,7 @@ void InputDevice::pointerEvent(int buttonMask, int x, int y) {
     Mutex::Autolock _l(mLock);
     if (!mOpened) return;
 
-    ALOGV("pointerEvent: buttonMask=%x x=%d y=%d", buttonMask, x, y);
+    //ALOGV("pointerEvent: buttonMask=%x x=%d y=%d", buttonMask, x, y);
 
     if ((buttonMask & 1) && mLeftClicked) {  // left btn clicked and moving
         inject(EV_ABS, ABS_X, x);

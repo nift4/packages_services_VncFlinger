@@ -2,6 +2,11 @@
 #include <utils/Log.h>
 
 #include <fcntl.h>
+#include <fstream>
+#include <signal.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "AndroidDesktop.h"
 
@@ -22,11 +27,20 @@ using namespace android;
 
 static char* gProgramName;
 static bool gCaughtSignal = false;
-
+static std::string mPidFile;
 static rfb::IntParameter rfbport("rfbport", "TCP port to listen for RFB protocol", 5900);
 
 static void printVersion(FILE* fp) {
     fprintf(fp, "VNCFlinger 1.0");
+}
+
+static void CleanupSignalHandler(int)
+{
+    ALOGI("You killed me - cleaning up");
+    if (mPidFile.length() != 0) {
+        remove(mPidFile.c_str());
+    }
+    exit(1);
 }
 
 static void usage() {
@@ -53,12 +67,25 @@ int main(int argc, char** argv) {
 
     rfb::Configuration::enableServerParams();
 
+#ifdef SIGHUP
+    signal(SIGHUP, CleanupSignalHandler);
+#endif
+    signal(SIGINT, CleanupSignalHandler);
+    signal(SIGTERM, CleanupSignalHandler);
+
     for (int i = 1; i < argc; i++) {
         if (rfb::Configuration::setParam(argv[i])) continue;
 
         if (argv[i][0] == '-') {
             if (i + 1 < argc) {
                 if (rfb::Configuration::setParam(&argv[i][1], argv[i + 1])) {
+                    i++;
+                    continue;
+                }
+            }
+            if (strcmp(argv[i], "-pid") == 0) {
+                if (i + 1 < argc) {
+                    mPidFile = std::string(argv[i + 1]);
                     i++;
                     continue;
                 }
@@ -77,7 +104,7 @@ int main(int argc, char** argv) {
     self->startThreadPool();
 
     std::list<network::SocketListener*> listeners;
-
+    int ret = 0;
     try {
         sp<AndroidDesktop> desktop = new AndroidDesktop();
         rfb::VNCServerST server("vncflinger", desktop.get());
@@ -87,6 +114,15 @@ int main(int argc, char** argv) {
         fcntl(eventFd, F_SETFL, O_NONBLOCK);
 
         ALOGI("Listening on port %d", (int)rfbport);
+
+        if (mPidFile.length() != 0) {
+            // write a pid file
+            ALOGI("pid file %s", mPidFile.c_str());
+            pid_t pid = getpid();
+            std::ofstream outfile(mPidFile);
+            outfile << pid;
+            outfile.close();
+        }
 
         while (!gCaughtSignal) {
             int wait_ms;
@@ -170,9 +206,14 @@ int main(int argc, char** argv) {
                 desktop->processFrames();
             }
         }
-
+        ret = 0;
     } catch (rdr::Exception& e) {
         ALOGE("%s", e.str());
-        return 1;
+        ret = 1;
     }
+    ALOGI("Bye - cleaning up");
+    if (mPidFile.length() != 0) {
+        remove(mPidFile.c_str());
+    }
+    return ret;
 }

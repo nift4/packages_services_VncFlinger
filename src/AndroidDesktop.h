@@ -56,7 +56,7 @@ class AndroidDesktop : public rfb::SDesktop,
   private:
     virtual void notify();
 
-    virtual status_t updateDisplayInfo();
+    virtual status_t updateDisplayInfo(bool force = false);
 
     virtual rfb::ScreenSet computeScreenLayout();
 

@@ -43,11 +43,13 @@ void AndroidDesktop::start(rfb::VNCServer* vs) {
     mPixels = new AndroidPixelBuffer();
     mPixels->setDimensionsChangedListener(this);
 
-    if (updateDisplayInfo() != NO_ERROR) {
+    if (updateDisplayInfo(true) != NO_ERROR) {
         ALOGE("Failed to query display!");
         return;
     }
 
+    rfb::ScreenSet screens = computeScreenLayout();
+    mServer->setPixelBuffer(mPixels.get(), screens);
     ALOGV("Desktop is running");
 }
 
@@ -156,7 +158,7 @@ void AndroidDesktop::pointerEvent(const rfb::Point& pos, int buttonMask) {
 }
 
 // refresh the display dimensions
-status_t AndroidDesktop::updateDisplayInfo() {
+status_t AndroidDesktop::updateDisplayInfo(bool force) {
     const auto displayToken = SurfaceComposerClient::getInternalDisplayToken();
     if (displayToken == nullptr) {
         ALOGE("Failed to get display token\n");
@@ -170,7 +172,7 @@ status_t AndroidDesktop::updateDisplayInfo() {
     }
     //ALOGV("updateDisplayInfo: [%d:%d]", mDisplayInfo.w, mDisplayInfo.h);
 
-    mPixels->setDisplayInfo(&mDisplayInfo);
+    mPixels->setDisplayInfo(&mDisplayInfo, force);
 
     return NO_ERROR;
 }

@@ -23,7 +23,9 @@
 #include <gui/CpuConsumer.h>
 #include <gui/IGraphicBufferProducer.h>
 
+#include <ui/DisplayConfig.h>
 #include <ui/DisplayInfo.h>
+#include <ui/DisplayState.h>
 #include <ui/Rect.h>
 
 using namespace android;
@@ -32,7 +34,8 @@ namespace vncflinger {
 
 class VirtualDisplay : public RefBase {
   public:
-    VirtualDisplay(DisplayInfo* info, uint32_t width, uint32_t height,
+    VirtualDisplay(DisplayConfig *config, ui::DisplayState* state,
+                   uint32_t width, uint32_t height,
                    sp<CpuConsumer::FrameAvailableListener> listener);
 
     virtual ~VirtualDisplay();

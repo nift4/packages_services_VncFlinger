@@ -168,9 +168,21 @@ status_t AndroidDesktop::updateDisplayInfo() {
         ALOGE("Failed to get display characteristics\n");
         return err;
     }
-    //ALOGV("updateDisplayInfo: [%d:%d]", mDisplayInfo.w, mDisplayInfo.h);
+    
+    err = SurfaceComposerClient::getActiveDisplayConfig(displayToken, &mDisplayConfig);
+    if (err != NO_ERROR) {
+        ALOGE("Failed to get display configuration\n");
+        return err;
+    }
+    ALOGV("updateDisplayInfo: [%d:%d]", mDisplayConfig.resolution.width, mDisplayConfig.resolution.height);
 
-    mPixels->setDisplayInfo(&mDisplayInfo);
+    err = SurfaceComposerClient::getDisplayState(displayToken, &mDisplayState);
+    if (err != NO_ERROR) {
+        ALOGE("Failed to get current display status");
+        return err;
+    }
+
+    mPixels->setDisplayInfo(&mDisplayConfig, &mDisplayState);
 
     return NO_ERROR;
 }
@@ -187,7 +199,8 @@ void AndroidDesktop::onBufferDimensionsChanged(uint32_t width, uint32_t height) 
           mDisplayRect.getHeight(), width, height);
 
     mVirtualDisplay.clear();
-    mVirtualDisplay = new VirtualDisplay(&mDisplayInfo, mPixels->width(), mPixels->height(), this);
+    mVirtualDisplay = new VirtualDisplay(&mDisplayConfig,  &mDisplayState,
+                                         mPixels->width(), mPixels->height(), this);
 
     mDisplayRect = mVirtualDisplay->getDisplayRect();
 

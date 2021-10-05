@@ -23,8 +23,7 @@
 #include <gui/CpuConsumer.h>
 #include <gui/IGraphicBufferProducer.h>
 
-#include <ui/DisplayConfig.h>
-#include <ui/DisplayInfo.h>
+#include <ui/DisplayMode.h>
 #include <ui/DisplayState.h>
 #include <ui/Rect.h>
 
@@ -34,7 +33,7 @@ namespace vncflinger {
 
 class VirtualDisplay : public RefBase {
   public:
-    VirtualDisplay(DisplayConfig *config, ui::DisplayState* state,
+    VirtualDisplay(ui::DisplayMode *mode, ui::DisplayState* state,
                    uint32_t width, uint32_t height,
                    sp<CpuConsumer::FrameAvailableListener> listener);
 

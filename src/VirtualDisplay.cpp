@@ -27,16 +27,16 @@
 
 using namespace vncflinger;
 
-VirtualDisplay::VirtualDisplay(DisplayConfig* config, ui::DisplayState* state,
+VirtualDisplay::VirtualDisplay(ui::DisplayMode* mode, ui::DisplayState* state,
                                uint32_t width, uint32_t height,
                                sp<CpuConsumer::FrameAvailableListener> listener) {
     mWidth = width;
     mHeight = height;
 
     if (state->orientation == ui::ROTATION_0 || state->orientation == ui::ROTATION_180) {
-        mSourceRect = Rect(config->resolution.width, config->resolution.height);
+        mSourceRect = Rect(mode->resolution.width, mode->resolution.height);
     } else {
-        mSourceRect = Rect(config->resolution.height, config->resolution.width);
+        mSourceRect = Rect(mode->resolution.height, mode->resolution.width);
     }
 
     Rect displayRect = getDisplayRect();

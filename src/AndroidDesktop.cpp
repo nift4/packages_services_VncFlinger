@@ -7,8 +7,6 @@
 #include <gui/ISurfaceComposer.h>
 #include <gui/SurfaceComposerClient.h>
 
-#include <ui/DisplayInfo.h>
-
 #include <rfb/PixelFormat.h>
 #include <rfb/Rect.h>
 #include <rfb/ScreenSet.h>
@@ -163,18 +161,12 @@ status_t AndroidDesktop::updateDisplayInfo() {
         return -1;
     }
 
-    status_t err = SurfaceComposerClient::getDisplayInfo(displayToken, &mDisplayInfo);
-    if (err != NO_ERROR) {
-        ALOGE("Failed to get display characteristics\n");
-        return err;
-    }
-    
-    err = SurfaceComposerClient::getActiveDisplayConfig(displayToken, &mDisplayConfig);
+    status_t err = SurfaceComposerClient::getActiveDisplayMode(displayToken, &mDisplayMode);
     if (err != NO_ERROR) {
         ALOGE("Failed to get display configuration\n");
         return err;
     }
-    ALOGV("updateDisplayInfo: [%d:%d]", mDisplayConfig.resolution.width, mDisplayConfig.resolution.height);
+    ALOGV("updateDisplayInfo: [%d:%d]", mDisplayMode.resolution.width, mDisplayMode.resolution.height);
 
     err = SurfaceComposerClient::getDisplayState(displayToken, &mDisplayState);
     if (err != NO_ERROR) {
@@ -182,7 +174,7 @@ status_t AndroidDesktop::updateDisplayInfo() {
         return err;
     }
 
-    mPixels->setDisplayInfo(&mDisplayConfig, &mDisplayState);
+    mPixels->setDisplayInfo(&mDisplayMode, &mDisplayState);
 
     return NO_ERROR;
 }
@@ -199,7 +191,7 @@ void AndroidDesktop::onBufferDimensionsChanged(uint32_t width, uint32_t height) 
           mDisplayRect.getHeight(), width, height);
 
     mVirtualDisplay.clear();
-    mVirtualDisplay = new VirtualDisplay(&mDisplayConfig,  &mDisplayState,
+    mVirtualDisplay = new VirtualDisplay(&mDisplayMode,  &mDisplayState,
                                          mPixels->width(), mPixels->height(), this);
 
     mDisplayRect = mVirtualDisplay->getDisplayRect();

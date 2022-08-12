@@ -33,7 +33,7 @@ namespace vncflinger {
 
 class VirtualDisplay : public RefBase {
   public:
-    VirtualDisplay(ui::DisplayMode *mode, ui::DisplayState* state,
+    VirtualDisplay(ui::Size* mode, ui::Rotation* state,
                    uint32_t width, uint32_t height,
                    sp<CpuConsumer::FrameAvailableListener> listener);
 

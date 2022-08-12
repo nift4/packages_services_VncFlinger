@@ -96,12 +96,12 @@ void AndroidPixelBuffer::setWindowSize(uint32_t width, uint32_t height) {
     }
 }
 
-void AndroidPixelBuffer::setDisplayInfo(ui::DisplayMode* mode, ui::DisplayState* state, bool force) {
-    bool rotated = isDisplayRotated(state->orientation);
+void AndroidPixelBuffer::setDisplayInfo(ui::Size* mode, ui::Rotation* state, bool force) {
+    bool rotated = isDisplayRotated(*state);
     setBufferRotation(rotated);
 
-    uint32_t w = rotated ? mode->resolution.height : mode->resolution.width;
-    uint32_t h = rotated ? mode->resolution.width : mode->resolution.height;
+    uint32_t w = rotated ? mode->height : mode->width;
+    uint32_t h = rotated ? mode->width : mode->height;
 
     if (w != mSourceWidth || h != mSourceHeight || force) {
         ALOGV("Display dimensions changed: old=(%dx%d) new=(%dx%d)", mSourceWidth, mSourceHeight, w,

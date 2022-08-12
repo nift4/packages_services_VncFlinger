@@ -79,8 +79,8 @@ class AndroidDesktop : public rfb::SDesktop,
     sp<VirtualDisplay> mVirtualDisplay;
 
     // Primary display
-    ui::DisplayMode mDisplayMode = {};
-    ui::DisplayState mDisplayState = {};
+    ui::Size mDisplayMode = {};
+    ui::Rotation mDisplayState = {};
 
     // Virtual input device
     sp<InputDevice> mInputDevice;

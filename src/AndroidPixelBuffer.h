@@ -36,7 +36,7 @@ class AndroidPixelBuffer : public RefBase, public rfb::ManagedPixelBuffer {
   public:
     AndroidPixelBuffer();
 
-    virtual void setDisplayInfo(ui::DisplayMode* mode, ui::DisplayState* state, bool force = false);
+    virtual void setDisplayInfo(ui::Size* mode, ui::Rotation* state, bool force = false);
 
     virtual void setWindowSize(uint32_t width, uint32_t height);
 

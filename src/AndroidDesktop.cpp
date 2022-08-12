@@ -164,18 +164,22 @@ status_t AndroidDesktop::updateDisplayInfo(bool force) {
         return -1;
     }
 
-    status_t err = SurfaceComposerClient::getActiveDisplayMode(displayToken, &mDisplayMode);
+    ui::DisplayMode tempDisplayMode;
+    status_t err = SurfaceComposerClient::getActiveDisplayMode(displayToken, &tempDisplayMode);
     if (err != NO_ERROR) {
         ALOGE("Failed to get display configuration\n");
         return err;
     }
-    ALOGV("updateDisplayInfo: [%d:%d]", mDisplayMode.resolution.width, mDisplayMode.resolution.height);
+    mDisplayMode = tempDisplayMode.resolution;
+    ALOGV("updateDisplayInfo: [%d:%d]", mDisplayMode.width, mDisplayMode.height);
 
-    err = SurfaceComposerClient::getDisplayState(displayToken, &mDisplayState);
+    ui::DisplayState tempDisplayState;
+    err = SurfaceComposerClient::getDisplayState(displayToken, &tempDisplayState);
     if (err != NO_ERROR) {
         ALOGE("Failed to get current display status");
         return err;
     }
+    mDisplayState = tempDisplayState.orientation;
 
     mPixels->setDisplayInfo(&mDisplayMode, &mDisplayState, force);
 

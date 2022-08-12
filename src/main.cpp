@@ -7,8 +7,10 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <inttypes.h>
 
 #include "AndroidDesktop.h"
+#include "AndroidSocket.h"
 
 #include <binder/IPCThreadState.h>
 #include <binder/IServiceManager.h>
@@ -22,13 +24,25 @@
 #include <rfb/VNCServerST.h>
 #include <rfb/util.h>
 
+#include <cutils/properties.h>
+
+
 using namespace vncflinger;
 using namespace android;
 
 static char* gProgramName;
 static bool gCaughtSignal = false;
 static std::string mPidFile;
+static char gSerialNo[PROPERTY_VALUE_MAX];
+
+#ifndef DESKTOP_NAME
+#define DESKTOP_NAME "VNCFlinger"
+#endif
+
 static rfb::IntParameter rfbport("rfbport", "TCP port to listen for RFB protocol", 5900);
+static rfb::BoolParameter localhostOnly("localhost", "Only allow connections from localhost", false);
+static rfb::StringParameter rfbunixpath("rfbunixpath", "Unix socket to listen for RFB protocol", "");
+static rfb::IntParameter rfbunixmode("rfbunixmode", "Unix socket access mode", 0600);
 
 static void printVersion(FILE* fp) {
     fprintf(fp, "VNCFlinger 1.0");
@@ -64,6 +78,10 @@ int main(int argc, char** argv) {
     rfb::LogWriter::setLogParams("*:android:30");
 
     gProgramName = argv[0];
+    property_get("ro.serialno", gSerialNo, "");
+    std::string desktopName = DESKTOP_NAME;
+    desktopName += " @ ";
+    desktopName += (const char *)gSerialNo;
 
     rfb::Configuration::enableServerParams();
 
@@ -107,13 +125,22 @@ int main(int argc, char** argv) {
     int ret = 0;
     try {
         sp<AndroidDesktop> desktop = new AndroidDesktop();
-        rfb::VNCServerST server("vncflinger", desktop.get());
-        network::createTcpListeners(&listeners, 0, (int)rfbport);
+        rfb::VNCServerST server(desktopName.c_str(), desktop.get());
+
+        if (rfbunixpath.getValueStr()[0] != '\0') {
+            listeners.push_back(new AndroidListener("vncflinger"));
+            ALOGI("Listening on %s (mode %04o)", (const char*)rfbunixpath, (int)rfbunixmode);
+        } else {
+            if (localhostOnly) {
+                network::createLocalTcpListeners(&listeners, (int)rfbport);
+            } else {
+                network::createTcpListeners(&listeners, 0, (int)rfbport);
+                ALOGI("Listening on port %d", (int)rfbport);
+            }
+        }
 
         int eventFd = desktop->getEventFd();
         fcntl(eventFd, F_SETFL, O_NONBLOCK);
-
-        ALOGI("Listening on port %d", (int)rfbport);
 
         if (mPidFile.length() != 0) {
             // write a pid file
@@ -147,7 +174,9 @@ int main(int argc, char** argv) {
                     delete (*i);
                 } else {
                     FD_SET((*i)->getFd(), &rfds);
-                    if ((*i)->outStream().bufferUsage() > 0) FD_SET((*i)->getFd(), &wfds);
+                    if ((*i)->outStream().bufferUsage() > 0) {
+                        FD_SET((*i)->getFd(), &wfds);
+                    }
                     clients_connected++;
                 }
             }
@@ -202,9 +231,10 @@ int main(int argc, char** argv) {
             uint64_t eventVal;
             int status = read(eventFd, &eventVal, sizeof(eventVal));
             if (status > 0 && eventVal > 0) {
-                //ALOGV("status=%d eventval=%lu", status, eventVal);
+                //ALOGV("status=%d eventval=%" PRIu64, status, eventVal);
                 desktop->processFrames();
             }
+
         }
         ret = 0;
     } catch (rdr::Exception& e) {

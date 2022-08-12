@@ -21,7 +21,8 @@
 #include <utils/Mutex.h>
 #include <utils/RefBase.h>
 
-#include <ui/DisplayInfo.h>
+#include <ui/DisplayMode.h>
+#include <ui/DisplayState.h>
 #include <ui/Rect.h>
 
 #include <rfb/PixelBuffer.h>
@@ -35,7 +36,7 @@ class AndroidPixelBuffer : public RefBase, public rfb::ManagedPixelBuffer {
   public:
     AndroidPixelBuffer();
 
-    virtual void setDisplayInfo(DisplayInfo* info, bool force = false);
+    virtual void setDisplayInfo(ui::DisplayMode* mode, ui::DisplayState* state, bool force = false);
 
     virtual void setWindowSize(uint32_t width, uint32_t height);
 
@@ -61,7 +62,7 @@ class AndroidPixelBuffer : public RefBase, public rfb::ManagedPixelBuffer {
     void reset();
 
   private:
-    static bool isDisplayRotated(uint8_t orientation);
+    static bool isDisplayRotated(ui::Rotation orientation);
 
     virtual void setBufferRotation(bool rotated);
 

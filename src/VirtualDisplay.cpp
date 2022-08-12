@@ -22,20 +22,21 @@
 #include <gui/CpuConsumer.h>
 #include <gui/IGraphicBufferConsumer.h>
 #include <gui/SurfaceComposerClient.h>
-
+#include <input/DisplayViewport.h>
 #include "VirtualDisplay.h"
 
 using namespace vncflinger;
 
-VirtualDisplay::VirtualDisplay(DisplayInfo* info, uint32_t width, uint32_t height,
+VirtualDisplay::VirtualDisplay(ui::DisplayMode* mode, ui::DisplayState* state,
+                               uint32_t width, uint32_t height,
                                sp<CpuConsumer::FrameAvailableListener> listener) {
     mWidth = width;
     mHeight = height;
 
-    if (info->orientation == DISPLAY_ORIENTATION_0 || info->orientation == DISPLAY_ORIENTATION_180) {
-        mSourceRect = Rect(info->w, info->h);
+    if (state->orientation == ui::ROTATION_0 || state->orientation == ui::ROTATION_180) {
+        mSourceRect = Rect(mode->resolution.width, mode->resolution.height);
     } else {
-        mSourceRect = Rect(info->h, info->w);
+        mSourceRect = Rect(mode->resolution.height, mode->resolution.width);
     }
 
     Rect displayRect = getDisplayRect();
@@ -54,7 +55,7 @@ VirtualDisplay::VirtualDisplay(DisplayInfo* info, uint32_t width, uint32_t heigh
 
     SurfaceComposerClient::Transaction t;
     t.setDisplaySurface(mDisplayToken, mProducer);
-    t.setDisplayProjection(mDisplayToken, 0, mSourceRect, displayRect);
+    t.setDisplayProjection(mDisplayToken, state->orientation, mSourceRect, displayRect);
     t.setDisplayLayerStack(mDisplayToken, 0);  // default stack
     t.apply();
 

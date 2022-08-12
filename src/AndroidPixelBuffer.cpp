@@ -18,8 +18,6 @@
 #define LOG_TAG "VNCFlinger:AndroidPixelBuffer"
 #include <utils/Log.h>
 
-#include <ui/DisplayInfo.h>
-
 #include "AndroidPixelBuffer.h"
 
 using namespace vncflinger;
@@ -37,8 +35,8 @@ AndroidPixelBuffer::~AndroidPixelBuffer() {
     mListener = nullptr;
 }
 
-bool AndroidPixelBuffer::isDisplayRotated(uint8_t orientation) {
-    return orientation != DISPLAY_ORIENTATION_0 && orientation != DISPLAY_ORIENTATION_180;
+bool AndroidPixelBuffer::isDisplayRotated(ui::Rotation orientation) {
+    return orientation != ui::ROTATION_0 && orientation != ui::ROTATION_180;
 }
 
 void AndroidPixelBuffer::setBufferRotation(bool rotated) {
@@ -98,12 +96,12 @@ void AndroidPixelBuffer::setWindowSize(uint32_t width, uint32_t height) {
     }
 }
 
-void AndroidPixelBuffer::setDisplayInfo(DisplayInfo* info, bool force) {
-    bool rotated = isDisplayRotated(info->orientation);
+void AndroidPixelBuffer::setDisplayInfo(ui::DisplayMode* mode, ui::DisplayState* state, bool force) {
+    bool rotated = isDisplayRotated(state->orientation);
     setBufferRotation(rotated);
 
-    uint32_t w = rotated ? info->h : info->w;
-    uint32_t h = rotated ? info->w : info->h;
+    uint32_t w = rotated ? mode->resolution.height : mode->resolution.width;
+    uint32_t h = rotated ? mode->resolution.width : mode->resolution.height;
 
     if (w != mSourceWidth || h != mSourceHeight || force) {
         ALOGV("Display dimensions changed: old=(%dx%d) new=(%dx%d)", mSourceWidth, mSourceHeight, w,

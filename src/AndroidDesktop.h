@@ -10,7 +10,8 @@
 
 #include <gui/CpuConsumer.h>
 
-#include <ui/DisplayInfo.h>
+#include <ui/DisplayMode.h>
+#include <ui/DisplayState.h>
 
 #include <rfb/PixelBuffer.h>
 #include <rfb/SDesktop.h>
@@ -78,7 +79,8 @@ class AndroidDesktop : public rfb::SDesktop,
     sp<VirtualDisplay> mVirtualDisplay;
 
     // Primary display
-    DisplayInfo mDisplayInfo;
+    ui::DisplayMode mDisplayMode = {};
+    ui::DisplayState mDisplayState = {};
 
     // Virtual input device
     sp<InputDevice> mInputDevice;

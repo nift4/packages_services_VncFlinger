@@ -77,6 +77,7 @@ class AndroidDesktop : public rfb::SDesktop,
 
     // Virtual display controller
     sp<VirtualDisplay> mVirtualDisplay;
+    uint32_t mLayerId;
 
     // Primary display
     ui::Size mDisplayMode = {};

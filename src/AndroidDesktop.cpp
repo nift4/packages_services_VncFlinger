@@ -183,6 +183,8 @@ status_t AndroidDesktop::updateDisplayInfo(bool force) {
 
     mPixels->setDisplayInfo(&mDisplayMode, &mDisplayState, force);
 
+    mLayerId = 0; // internal display constant id
+
     return NO_ERROR;
 }
 
@@ -199,7 +201,7 @@ void AndroidDesktop::onBufferDimensionsChanged(uint32_t width, uint32_t height) 
 
     mVirtualDisplay.clear();
     mVirtualDisplay = new VirtualDisplay(&mDisplayMode,  &mDisplayState,
-                                         mPixels->width(), mPixels->height(), this);
+                                         mPixels->width(), mPixels->height(), mLayerId, this);
 
     mDisplayRect = mVirtualDisplay->getDisplayRect();
 

@@ -34,7 +34,7 @@ namespace vncflinger {
 class VirtualDisplay : public RefBase {
   public:
     VirtualDisplay(ui::Size* mode, ui::Rotation* state,
-                   uint32_t width, uint32_t height,
+                   uint32_t width, uint32_t height, uint32_t layerId,
                    sp<CpuConsumer::FrameAvailableListener> listener);
 
     virtual ~VirtualDisplay();
@@ -62,6 +62,7 @@ class VirtualDisplay : public RefBase {
 
     // Virtual display
     sp<IBinder> mDisplayToken;
+    uint32_t mLayerId;
 
     sp<CpuConsumer::FrameAvailableListener> mListener;
 

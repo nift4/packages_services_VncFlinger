@@ -28,10 +28,11 @@
 using namespace vncflinger;
 
 VirtualDisplay::VirtualDisplay(ui::Size* mode, ui::Rotation* state,
-                               uint32_t width, uint32_t height,
+                               uint32_t width, uint32_t height, uint32_t layerId,
                                sp<CpuConsumer::FrameAvailableListener> listener) {
     mWidth = width;
     mHeight = height;
+    mLayerId = layerId;
 
     if (*state == ui::ROTATION_0 || *state == ui::ROTATION_180) {
         mSourceRect = Rect(mode->width, mode->height);
@@ -56,7 +57,7 @@ VirtualDisplay::VirtualDisplay(ui::Size* mode, ui::Rotation* state,
     SurfaceComposerClient::Transaction t;
     t.setDisplaySurface(mDisplayToken, mProducer);
     t.setDisplayProjection(mDisplayToken, *state, mSourceRect, displayRect);
-    t.setDisplayLayerStack(mDisplayToken, 0);  // default stack
+    t.setDisplayLayerStack(mDisplayToken, mLayerId);
     t.apply();
 
     ALOGV("Virtual display (%ux%u [viewport=%ux%u] created", width, height, displayRect.getWidth(),

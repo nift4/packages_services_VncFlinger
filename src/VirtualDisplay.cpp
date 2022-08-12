@@ -51,7 +51,7 @@ VirtualDisplay::VirtualDisplay(ui::DisplayMode* mode, ui::DisplayState* state,
 
     mCpuConsumer->setFrameAvailableListener(listener);
 
-    mDisplayToken = SurfaceComposerClient::createDisplay(String8("VNC-VirtualDisplay"), false /*secure*/);
+    mDisplayToken = SurfaceComposerClient::createDisplay(String8("VNC-VirtualDisplay"), true /*secure*/);
 
     SurfaceComposerClient::Transaction t;
     t.setDisplaySurface(mDisplayToken, mProducer);

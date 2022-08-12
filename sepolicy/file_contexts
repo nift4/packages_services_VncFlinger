@@ -1,1 +1,2 @@
 /system/bin/vncflinger   u:object_r:vncflinger_exec:s0
+/system/bin/vncpasswd    u:object_r:vncflinger_exec:s0

@@ -10,3 +10,7 @@ on property:persist.vnc.enable=true
 
 on property:persist.vnc.enable=false
     stop vncflinger
+
+on boot
+    # vnc
+    chmod 0666 /dev/uinput

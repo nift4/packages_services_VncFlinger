@@ -67,6 +67,9 @@ class InputDevice : public RefBase {
     bool mLeftClicked;
     bool mRightClicked;
     bool mMiddleClicked;
+
+    int32_t mLastX;
+    int32_t mLastY;
 };
 };
 #endif

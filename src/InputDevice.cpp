@@ -32,6 +32,7 @@
 
 using namespace android;
 
+static bool touch = false;
 
 static const struct UInputOptions {
     int cmd;
@@ -49,6 +50,15 @@ static const struct UInputOptions {
     {UI_SET_EVBIT, EV_SYN},
     {UI_SET_PROPBIT, INPUT_PROP_DIRECT},
 };
+static const struct UInputOptions mOptions[] = {
+    {UI_SET_EVBIT, EV_KEY},
+    {UI_SET_EVBIT, EV_REP},
+    {UI_SET_EVBIT, EV_REL},
+    {UI_SET_RELBIT, REL_X},
+    {UI_SET_RELBIT, REL_Y},
+    {UI_SET_RELBIT, REL_WHEEL},
+    {UI_SET_EVBIT, EV_SYN},
+};
 
 status_t InputDevice::start_async(uint32_t width, uint32_t height) {
     // don't block the caller since this can take a few seconds
@@ -61,6 +71,7 @@ status_t InputDevice::start(uint32_t width, uint32_t height) {
     Mutex::Autolock _l(mLock);
 
     mLeftClicked = mMiddleClicked = mRightClicked = false;
+    mLastX = mLastY = 0;
 
     struct input_id id = {
         BUS_VIRTUAL, /* Bus type */
@@ -80,15 +91,19 @@ status_t InputDevice::start(uint32_t width, uint32_t height) {
         return NO_INIT;
     }
 
+    const auto options = touch ? kOptions : mOptions;
+
     unsigned int idx = 0;
-    for (idx = 0; idx < sizeof(kOptions) / sizeof(kOptions[0]); idx++) {
-        if (ioctl(mFD, kOptions[idx].cmd, kOptions[idx].bit) < 0) {
-            ALOGE("uinput ioctl failed: %d %d", kOptions[idx].cmd, kOptions[idx].bit);
+    for (idx = 0; idx < (touch ? sizeof(kOptions) : sizeof(mOptions)) / (touch ? sizeof(kOptions[0]) : sizeof(mOptions[0])); idx++) {
+        if (ioctl(mFD, options[idx].cmd, options[idx].bit) < 0) {
+            ALOGE("uinput ioctl failed: %d %d", options[idx].cmd, options[idx].bit);
             goto err_ioctl;
         }
     }
 
     for (idx = 0; idx < KEY_MAX; idx++) {
+        if (!touch && idx == BTN_TOUCH)
+            continue;
         if (ioctl(mFD, UI_SET_KEYBIT, idx) < 0) {
             ALOGE("UI_SET_KEYBIT failed");
             goto err_ioctl;
@@ -100,10 +115,12 @@ status_t InputDevice::start(uint32_t width, uint32_t height) {
 
     mUserDev.id = id;
 
-    mUserDev.absmin[ABS_X] = 0;
-    mUserDev.absmax[ABS_X] = width;
-    mUserDev.absmin[ABS_Y] = 0;
-    mUserDev.absmax[ABS_Y] = height;
+    if (touch) {
+        mUserDev.absmin[ABS_X] = 0;
+        mUserDev.absmax[ABS_X] = width;
+        mUserDev.absmin[ABS_Y] = 0;
+        mUserDev.absmax[ABS_Y] = height;
+    }
 
     if (write(mFD, &mUserDev, sizeof(mUserDev)) != sizeof(mUserDev)) {
         ALOGE("Failed to configure uinput device");
@@ -168,6 +185,9 @@ status_t InputDevice::injectSyn(uint16_t type, uint16_t code, int32_t value) {
 }
 
 status_t InputDevice::movePointer(int32_t x, int32_t y) {
+    ALOGV("movePointer: x=%d y=%d", x, y);
+    mLastX = x;
+    mLastY = y;
     if (inject(EV_REL, REL_X, x) != OK) {
         return BAD_VALUE;
     }
@@ -175,6 +195,20 @@ status_t InputDevice::movePointer(int32_t x, int32_t y) {
 }
 
 status_t InputDevice::setPointer(int32_t x, int32_t y) {
+    ALOGV("setPointer: x=%d y=%d", x, y);
+    if (!touch) {
+        if (inject(EV_REL, REL_X, x - mLastX) != OK) {
+            return BAD_VALUE;
+        }
+        if (inject(EV_REL, REL_Y, y - mLastY) != OK) {
+            return BAD_VALUE;
+        }
+        mLastX = x;
+        mLastY = y;
+        return OK;
+    }
+    mLastX = x;
+    mLastY = y;
     if (inject(EV_ABS, ABS_X, x) != OK) {
         return BAD_VALUE;
     }
@@ -239,50 +273,77 @@ void InputDevice::pointerEvent(int buttonMask, int x, int y) {
     Mutex::Autolock _l(mLock);
     if (!mOpened) return;
 
-    //ALOGV("pointerEvent: buttonMask=%x x=%d y=%d", buttonMask, x, y);
+    ALOGV("pointerEvent: buttonMask=%x x=%d y=%d", buttonMask, x, y);
 
-    if ((buttonMask & 1) && mLeftClicked) {  // left btn clicked and moving
-        inject(EV_ABS, ABS_X, x);
-        inject(EV_ABS, ABS_Y, y);
+    int32_t diffX = x - mLastX;
+    int32_t diffY = y - mLastY;
+    mLastX = x;
+    mLastY = y;
+    if (!touch) {
+        inject(EV_REL, REL_X, diffX);
+        inject(EV_REL, REL_Y, diffY);
         inject(EV_SYN, SYN_REPORT, 0);
+    }
 
-    } else if (buttonMask & 1) {  // left btn clicked
+    if ((buttonMask & 1) && !mLeftClicked) {  // left btn clicked
         mLeftClicked = true;
 
-        inject(EV_ABS, ABS_X, x);
-        inject(EV_ABS, ABS_Y, y);
-        inject(EV_KEY, BTN_TOUCH, 1);
+        if (touch) {
+            inject(EV_ABS, ABS_X, x);
+            inject(EV_ABS, ABS_Y, y);
+            inject(EV_KEY, BTN_TOUCH, 1);
+        } else {
+            inject(EV_KEY, BTN_LEFT, 1);
+        }
         inject(EV_SYN, SYN_REPORT, 0);
-    } else if (mLeftClicked)  // left btn released
-    {
+    } else if (!(buttonMask & 1) && mLeftClicked) {  // left btn released
         mLeftClicked = false;
-        inject(EV_ABS, ABS_X, x);
-        inject(EV_ABS, ABS_Y, y);
-        inject(EV_KEY, BTN_TOUCH, 0);
+        if (touch) {
+            inject(EV_ABS, ABS_X, x);
+            inject(EV_ABS, ABS_Y, y);
+            inject(EV_KEY, BTN_TOUCH, 0);
+        } else {
+            inject(EV_KEY, BTN_LEFT, 0);
+        }
         inject(EV_SYN, SYN_REPORT, 0);
     }
 
-    if (buttonMask & 4)  // right btn clicked
+    if ((buttonMask & 4) && !mRightClicked)  // right btn clicked
     {
         mRightClicked = true;
-        press(158);  // back key
+        if (touch) {
+            press(158);  // back key
+        } else {
+            inject(EV_KEY, BTN_RIGHT, 1);
+        }
         inject(EV_SYN, SYN_REPORT, 0);
-    } else if (mRightClicked)  // right button released
+    } else if (!(buttonMask & 4) && mRightClicked)  // right button released
     {
         mRightClicked = false;
-        release(158);
+        if (touch) {
+            release(158);
+        } else {
+            inject(EV_KEY, BTN_RIGHT, 0);
+        }
         inject(EV_SYN, SYN_REPORT, 0);
     }
 
-    if (buttonMask & 2)  // mid btn clicked
-    {
+    if ((buttonMask & 2) && !mMiddleClicked) {  // mid btn clicked
         mMiddleClicked = true;
-        press(KEY_END);
+        if (touch) {
+            press(KEY_END);
+        } else {
+            inject(EV_KEY, BTN_MIDDLE, 1);
+        }
         inject(EV_SYN, SYN_REPORT, 0);
-    } else if (mMiddleClicked)  // mid btn released
+    } else if (!(buttonMask & 2) && mMiddleClicked)  // mid btn released
     {
         mMiddleClicked = false;
-        release(KEY_END);
+        if (touch) {
+            release(KEY_END);
+        } else {
+            inject(EV_KEY, BTN_MIDDLE, 0);
+        }
         inject(EV_SYN, SYN_REPORT, 0);
     }
 

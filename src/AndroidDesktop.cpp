@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include <sys/eventfd.h>
+#include <sys/system_properties.h>
 
 #include <gui/ISurfaceComposer.h>
 #include <gui/SurfaceComposerClient.h>
@@ -160,33 +161,66 @@ void AndroidDesktop::pointerEvent(const rfb::Point& pos, int buttonMask) {
 
 // refresh the display dimensions
 status_t AndroidDesktop::updateDisplayInfo(bool force) {
-    const auto displayToken = SurfaceComposerClient::getInternalDisplayToken();
-    if (displayToken == nullptr) {
-        ALOGE("Failed to get display token\n");
-        return -1;
+    char layerIdStr[92];
+    char widthStr[92];
+    char heightStr[92];
+    char rotationStr[92];
+    int layerId, width, height, rotation;
+    if (!__system_property_get("sys.vnc.layer_id", layerIdStr)) {
+        layerId = -1;
+    } else {
+        layerId = std::stoi(layerIdStr);
+    }
+    if (!__system_property_get("sys.vnc.width", widthStr)) {
+        width = -1;
+    } else {
+        width = std::stoi(widthStr);
+    }
+    if (!__system_property_get("sys.vnc.height", heightStr)) {
+        height = -1;
+    } else {
+        height = std::stoi(heightStr);
+    }
+    if (!__system_property_get("sys.vnc.rotation", rotationStr)) {
+        rotation = -1;
+    } else {
+        rotation = std::stoi(layerIdStr);
     }
 
-    ui::DisplayMode tempDisplayMode;
-    status_t err = SurfaceComposerClient::getActiveDisplayMode(displayToken, &tempDisplayMode);
-    if (err != NO_ERROR) {
-        ALOGE("Failed to get display configuration\n");
-        return err;
-    }
-    mDisplayMode = tempDisplayMode.resolution;
-    ALOGV("updateDisplayInfo: [%d:%d]", mDisplayMode.width, mDisplayMode.height);
+    if (layerId == -1 || width == -1 || height == -1 || rotation == -1) {
+        const auto displayToken = SurfaceComposerClient::getInternalDisplayToken();
+        if (displayToken == nullptr) {
+            ALOGE("Failed to get display token\n");
+            return -1;
+        }
 
-    ui::DisplayState tempDisplayState;
-    err = SurfaceComposerClient::getDisplayState(displayToken, &tempDisplayState);
-    if (err != NO_ERROR) {
-        ALOGE("Failed to get current display status");
-        return err;
-    }
-    mDisplayState = tempDisplayState.orientation;
+        ui::DisplayMode tempDisplayMode;
+        status_t err = SurfaceComposerClient::getActiveDisplayMode(displayToken, &tempDisplayMode);
+        if (err != NO_ERROR) {
+            ALOGE("Failed to get display configuration\n");
+            return err;
+        }
+        mDisplayMode = tempDisplayMode.resolution;
+        ALOGV("updateDisplayInfo: [%d:%d]", mDisplayMode.width, mDisplayMode.height);
 
+        ui::DisplayState tempDisplayState;
+        err = SurfaceComposerClient::getDisplayState(displayToken, &tempDisplayState);
+        if (err != NO_ERROR) {
+            ALOGE("Failed to get current display status");
+            return err;
+        }
+        mDisplayState = tempDisplayState.orientation;
+
+        mLayerId = 0; // internal display constant id
+
+    } else {
+        mDisplayMode = ui::Size(width, height);
+        mDisplayState = rotation == 270 ? ui::ROTATION_270 : (rotation == 180 ? ui::ROTATION_180 : (rotation == 90 ? ui::ROTATION_90 : ui::ROTATION_0));
+        mLayerId = layerId;
+    }
+
+    ALOGV("updateDisplayInfo: [%d:%d], rotated %d", mDisplayMode.width, mDisplayMode.height, mDisplayState);
     mPixels->setDisplayInfo(&mDisplayMode, &mDisplayState, force);
-
-    mLayerId = 0; // internal display constant id
-
     return NO_ERROR;
 }
 

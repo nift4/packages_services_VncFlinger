@@ -5,10 +5,10 @@ service vncflinger /system/bin/vncflinger -rfbunixpath /dev/socket/vncflinger -S
     group system input inet readproc
     socket vncflinger stream 0666 root system
 
-on property:persist.vnc.enable=true
+on property:sys.vnc.enable=true
     start vncflinger
 
-on property:persist.vnc.enable=false
+on property:sys.vnc.enable=false
     stop vncflinger
 
 on boot

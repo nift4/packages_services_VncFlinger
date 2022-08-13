@@ -18,12 +18,15 @@ package org.eu.droid_ng.vncflinger;
 
 import static android.hardware.display.DisplayManager.*;
 
+import android.annotation.SuppressLint;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.SurfaceTexture;
+import android.graphics.PixelFormat;
+//import android.graphics.SurfaceTexture;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
+import android.media.ImageReader;
 import android.os.IBinder;
 import android.os.SystemProperties;
 import android.util.Log;
@@ -31,7 +34,8 @@ import android.view.Surface;
 
 public class VncFlingerJava extends Service {
     private static final String TAG = "VncFlingerJava";
-    private SurfaceTexture t;
+    //private SurfaceTexture t;
+    private ImageReader t;
     private Surface s;
     private VirtualDisplay vd;
 
@@ -40,6 +44,7 @@ public class VncFlingerJava extends Service {
         return null;
     }
 
+    @SuppressLint("WrongConstant")
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
@@ -56,8 +61,10 @@ public class VncFlingerJava extends Service {
         }
 
         // Step 1: create dummy surface which should do nothing i hope
-        t = new SurfaceTexture(false);
-        s = new Surface(t);
+        //t = new SurfaceTexture(false);
+        //s = new Surface(t);
+        t = ImageReader.newInstance(w, h, PixelFormat.RGBA_8888, 1);
+        s = t.getSurface();
 
         // Step 2: make the virtual display
         DisplayManager dm = (DisplayManager) getApplicationContext().getSystemService(Context.DISPLAY_SERVICE);
@@ -86,7 +93,8 @@ public class VncFlingerJava extends Service {
         Log.i(TAG, "Destroying...");
         vd.release();
         s.release();
-        t.release();
+        //t.release();
+        t.close();
 
         SystemProperties.set("sys.vnc.layer_id", String.valueOf(-1));
         SystemProperties.set("sys.vnc.width", String.valueOf(-1));

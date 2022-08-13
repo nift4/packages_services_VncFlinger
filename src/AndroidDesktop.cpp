@@ -21,7 +21,6 @@ using namespace vncflinger;
 using namespace android;
 
 AndroidDesktop::AndroidDesktop() {
-    mInputDevice = new InputDevice();
     mDisplayRect = Rect(0, 0);
 
     mEventFd = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK);
@@ -32,12 +31,12 @@ AndroidDesktop::AndroidDesktop() {
 }
 
 AndroidDesktop::~AndroidDesktop() {
-    mInputDevice->stop();
     close(mEventFd);
 }
 
 void AndroidDesktop::start(rfb::VNCServer* vs) {
     mServer = vs;
+    mInputDevice = new InputDevice();
 
     mPixels = new AndroidPixelBuffer();
     mPixels->setDimensionsChangedListener(this);
@@ -62,6 +61,7 @@ void AndroidDesktop::stop() {
 
     mVirtualDisplay.clear();
     mPixels.clear();
+    mInputDevice->stop();
 }
 
 void AndroidDesktop::processFrames() {
@@ -147,9 +147,10 @@ void AndroidDesktop::pointerEvent(const rfb::Point& pos, int buttonMask) {
         // outside viewport
         return;
     }
-    uint32_t spaceX = abs(((float)(mDisplayRect.getWidth() - mPixels->width())) / 2);
-    uint32_t x = pos.x - spaceX;
-    uint32_t y = pos.y * ((float)(mDisplayRect.getHeight()) / (float)mPixels->height());
+    uint32_t mx = (mPixels->width() - mDisplayRect.getWidth()) / 2;
+    uint32_t my = (mPixels->height() - mDisplayRect.getHeight()) / 2;
+    uint32_t x = (((pos.x - mx) * mDisplayMode.width) / ((float)(mDisplayRect.getWidth())));
+    uint32_t y = (((pos.y - my) * mDisplayMode.height) / ((float)(mDisplayRect.getHeight())));
 
     ALOGV("pointer xlate x1=%d y1=%d x2=%d y2=%d", pos.x, pos.y, x, y);
 
@@ -206,7 +207,7 @@ void AndroidDesktop::onBufferDimensionsChanged(uint32_t width, uint32_t height) 
 
     mDisplayRect = mVirtualDisplay->getDisplayRect();
 
-    mInputDevice->reconfigure(mDisplayRect.getWidth(), mDisplayRect.getHeight());
+    mInputDevice->reconfigure(mDisplayMode.width, mDisplayMode.height);
 
     mServer->setPixelBuffer(mPixels.get(), computeScreenLayout());
     mServer->setScreenLayout(computeScreenLayout());

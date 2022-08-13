@@ -32,7 +32,12 @@
 
 using namespace android;
 
-static bool touch = false;
+static bool touch = false; // true = touchscreen, false = mouse
+static bool useRelativeInput = false; // false = touchscreen, true = mouse
+// Relative Input tracking is unreliable BECAUSE Android adds fling to relative mouse input
+// I solved this by patching absolute mouse support into frameworks/native, but if you really want to use this
+// Do mind that viewer cursor and server cursor need to be same pos at the beginning
+// Or it will cause confusion
 
 static const struct UInputOptions {
     int cmd;
@@ -57,6 +62,9 @@ static const struct UInputOptions mOptions[] = {
     {UI_SET_RELBIT, REL_X},
     {UI_SET_RELBIT, REL_Y},
     {UI_SET_RELBIT, REL_WHEEL},
+    {UI_SET_EVBIT, EV_ABS},
+    {UI_SET_ABSBIT, ABS_X},
+    {UI_SET_ABSBIT, ABS_Y},
     {UI_SET_EVBIT, EV_SYN},
 };
 
@@ -115,7 +123,7 @@ status_t InputDevice::start(uint32_t width, uint32_t height) {
 
     mUserDev.id = id;
 
-    if (touch) {
+    if (!useRelativeInput) {
         mUserDev.absmin[ABS_X] = 0;
         mUserDev.absmax[ABS_X] = width;
         mUserDev.absmin[ABS_Y] = 0;
@@ -196,7 +204,7 @@ status_t InputDevice::movePointer(int32_t x, int32_t y) {
 
 status_t InputDevice::setPointer(int32_t x, int32_t y) {
     ALOGV("setPointer: x=%d y=%d", x, y);
-    if (!touch) {
+    if (useRelativeInput) {
         if (inject(EV_REL, REL_X, x - mLastX) != OK) {
             return BAD_VALUE;
         }
@@ -275,22 +283,28 @@ void InputDevice::pointerEvent(int buttonMask, int x, int y) {
 
     ALOGV("pointerEvent: buttonMask=%x x=%d y=%d", buttonMask, x, y);
 
-    int32_t diffX = x - mLastX;
-    int32_t diffY = y - mLastY;
+    int32_t diffX = (x - mLastX);
+    int32_t diffY = (y - mLastY);
     mLastX = x;
     mLastY = y;
     if (!touch) {
-        inject(EV_REL, REL_X, diffX);
-        inject(EV_REL, REL_Y, diffY);
+        if (!useRelativeInput) {
+            inject(EV_ABS, ABS_X, x);
+            inject(EV_ABS, ABS_Y, y);
+        } else {
+            inject(EV_REL, REL_X, diffX);
+            inject(EV_REL, REL_Y, diffY);
+        }
         inject(EV_SYN, SYN_REPORT, 0);
     }
 
     if ((buttonMask & 1) && !mLeftClicked) {  // left btn clicked
         mLeftClicked = true;
-
-        if (touch) {
+        if (!useRelativeInput) {
             inject(EV_ABS, ABS_X, x);
             inject(EV_ABS, ABS_Y, y);
+        }
+        if (touch) {
             inject(EV_KEY, BTN_TOUCH, 1);
         } else {
             inject(EV_KEY, BTN_LEFT, 1);
@@ -298,15 +312,17 @@ void InputDevice::pointerEvent(int buttonMask, int x, int y) {
         inject(EV_SYN, SYN_REPORT, 0);
     } else if (!(buttonMask & 1) && mLeftClicked) {  // left btn released
         mLeftClicked = false;
-        if (touch) {
+        if (!useRelativeInput) {
             inject(EV_ABS, ABS_X, x);
             inject(EV_ABS, ABS_Y, y);
+        }
+        if (touch) {
             inject(EV_KEY, BTN_TOUCH, 0);
         } else {
             inject(EV_KEY, BTN_LEFT, 0);
         }
         inject(EV_SYN, SYN_REPORT, 0);
-    } else if (mLeftClicked && touch) {
+    } else if (mLeftClicked && !useRelativeInput) { // dragclick
         inject(EV_ABS, ABS_X, x);
         inject(EV_ABS, ABS_Y, y);
         inject(EV_SYN, SYN_REPORT, 0);
@@ -330,6 +346,10 @@ void InputDevice::pointerEvent(int buttonMask, int x, int y) {
             inject(EV_KEY, BTN_RIGHT, 0);
         }
         inject(EV_SYN, SYN_REPORT, 0);
+    } else if (mRightClicked && !useRelativeInput) { // dragclick
+        inject(EV_ABS, ABS_X, x);
+        inject(EV_ABS, ABS_Y, y);
+        inject(EV_SYN, SYN_REPORT, 0);
     }
 
     if ((buttonMask & 2) && !mMiddleClicked) {  // mid btn clicked
@@ -348,6 +368,10 @@ void InputDevice::pointerEvent(int buttonMask, int x, int y) {
         } else {
             inject(EV_KEY, BTN_MIDDLE, 0);
         }
+        inject(EV_SYN, SYN_REPORT, 0);
+    } else if (mMiddleClicked && !useRelativeInput) { // dragclick
+        inject(EV_ABS, ABS_X, x);
+        inject(EV_ABS, ABS_Y, y);
         inject(EV_SYN, SYN_REPORT, 0);
     }
 

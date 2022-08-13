@@ -143,6 +143,7 @@ void AndroidDesktop::keyEvent(rdr::U32 keysym, __unused_attr rdr::U32 keycode, b
 void AndroidDesktop::pointerEvent(const rfb::Point& pos, int buttonMask) {
     if (pos.x < mDisplayRect.left || pos.x > mDisplayRect.right || pos.y < mDisplayRect.top ||
         pos.y > mDisplayRect.bottom) {
+        ALOGV("pointer dropped x=%d y=%d left=%d right=%d top=%d bottom=%d", pos.x, pos.y, mDisplayRect.left, mDisplayRect.right, mDisplayRect.top, mDisplayRect.bottom);
         // outside viewport
         return;
     }
@@ -150,7 +151,7 @@ void AndroidDesktop::pointerEvent(const rfb::Point& pos, int buttonMask) {
     uint32_t x = pos.x - spaceX;
     uint32_t y = pos.y * ((float)(mDisplayRect.getHeight()) / (float)mPixels->height());
 
-    //ALOGV("pointer xlate x1=%d y1=%d x2=%d y2=%d", pos.x, pos.y, x, y);
+    ALOGV("pointer xlate x1=%d y1=%d x2=%d y2=%d", pos.x, pos.y, x, y);
 
     mServer->setCursorPos(rfb::Point(x, y));
     mInputDevice->pointerEvent(buttonMask, x, y);

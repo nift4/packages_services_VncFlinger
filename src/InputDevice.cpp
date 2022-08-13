@@ -306,6 +306,10 @@ void InputDevice::pointerEvent(int buttonMask, int x, int y) {
             inject(EV_KEY, BTN_LEFT, 0);
         }
         inject(EV_SYN, SYN_REPORT, 0);
+    } else if (mLeftClicked && touch) {
+        inject(EV_ABS, ABS_X, x);
+        inject(EV_ABS, ABS_Y, y);
+        inject(EV_SYN, SYN_REPORT, 0);
     }
 
     if ((buttonMask & 4) && !mRightClicked)  // right btn clicked

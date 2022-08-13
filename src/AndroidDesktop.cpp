@@ -216,6 +216,10 @@ status_t AndroidDesktop::updateDisplayInfo(bool force) {
     } else {
         mDisplayMode = ui::Size(width, height);
         mDisplayState = rotation == 270 ? ui::ROTATION_270 : (rotation == 180 ? ui::ROTATION_180 : (rotation == 90 ? ui::ROTATION_90 : ui::ROTATION_0));
+        if (layerId != mLayerId) {
+            mLayerId = layerId;
+            onBufferDimensionsChanged(width, height);
+        }
         mLayerId = layerId;
     }
 

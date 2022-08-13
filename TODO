@@ -1,4 +1,5 @@
 Various things that need done:
 
-Binder interface
 Copy/paste
+Sound
+Unhardcode display id (load from prop)

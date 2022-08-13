@@ -74,14 +74,14 @@ VirtualDisplay::~VirtualDisplay() {
 
 Rect VirtualDisplay::getDisplayRect() {
     uint32_t outWidth, outHeight;
-    if (mWidth > (uint32_t)((float)mWidth * aspectRatio())) {
+    if (mWidth <= (uint32_t)((float)mHeight * aspectRatio())) {
         // limited by narrow width; reduce height
         outWidth = mWidth;
-        outHeight = (uint32_t)((float)mWidth * aspectRatio());
+        outHeight = (uint32_t)((float)mWidth / aspectRatio());
     } else {
         // limited by short height; restrict width
         outHeight = mHeight;
-        outWidth = (uint32_t)((float)mHeight / aspectRatio());
+        outWidth = (uint32_t)((float)mHeight * aspectRatio());
     }
 
     // position the desktop in the viewport while preserving

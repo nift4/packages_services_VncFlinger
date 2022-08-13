@@ -51,7 +51,7 @@ class VirtualDisplay : public RefBase {
 
   private:
     float aspectRatio() {
-        return (float)mSourceRect.getHeight() / (float)mSourceRect.getWidth();
+        return (float)mSourceRect.getWidth() / (float)mSourceRect.getHeight();
     }
 
     // Producer side of queue, passed into the virtual display.

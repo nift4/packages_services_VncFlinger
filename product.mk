@@ -3,4 +3,5 @@ SYSTEM_EXT_PRIVATE_SEPOLICY_DIRS += \
 
 PRODUCT_PACKAGES += \
     vncflinger \
-    vncpasswd
+    vncpasswd \
+    VncFlingerJava

@@ -26,6 +26,7 @@
 #include <stdio.h>
 
 #include <sys/ioctl.h>
+#include <sys/system_properties.h>
 
 #include <linux/input.h>
 #include <linux/uinput.h>
@@ -81,6 +82,22 @@ status_t InputDevice::start(uint32_t width, uint32_t height) {
     mLeftClicked = mMiddleClicked = mRightClicked = false;
     mLastX = mLastY = 0;
 
+    char touchStr[92];
+    char useRelativeInputStr[92];
+    if (!__system_property_get("sys.vnc.touch", touchStr)) {
+        touch = false;
+    } else {
+        touch = std::stoi(touchStr) == 1;
+    }
+    if (!__system_property_get("sys.vnc.relative_input", useRelativeInputStr)) {
+        useRelativeInput = false;
+    } else {
+        useRelativeInput = std::stoi(useRelativeInputStr) == 1;
+    }
+    if (touch) {
+        useRelativeInput = false;
+    }
+
     struct input_id id = {
         BUS_VIRTUAL, /* Bus type */
         1,           /* Vendor */
@@ -111,6 +128,8 @@ status_t InputDevice::start(uint32_t width, uint32_t height) {
 
     for (idx = 0; idx < KEY_MAX; idx++) {
         if (!touch && idx == BTN_TOUCH)
+            continue;
+        if (touch && idx == BTN_MOUSE)
             continue;
         if (ioctl(mFD, UI_SET_KEYBIT, idx) < 0) {
             ALOGE("UI_SET_KEYBIT failed");

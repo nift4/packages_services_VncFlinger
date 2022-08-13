@@ -35,10 +35,6 @@ static bool gCaughtSignal = false;
 static std::string mPidFile;
 static char gSerialNo[PROPERTY_VALUE_MAX];
 
-#ifndef DESKTOP_NAME
-#define DESKTOP_NAME "VNCFlinger"
-#endif
-
 static rfb::IntParameter rfbport("rfbport", "TCP port to listen for RFB protocol", 5900);
 static rfb::BoolParameter localhostOnly("localhost", "Only allow connections from localhost", false);
 static rfb::StringParameter rfbunixpath("rfbunixpath", "Unix socket to listen for RFB protocol", "");
@@ -78,10 +74,14 @@ int main(int argc, char** argv) {
     rfb::LogWriter::setLogParams("*:android:30");
 
     gProgramName = argv[0];
-    property_get("ro.serialno", gSerialNo, "");
+    property_get("ro.build.product", gSerialNo, "");
+#ifdef DESKTOP_NAME
     std::string desktopName = DESKTOP_NAME;
+#else
+    std::string desktopName = "VNCFlinger";
     desktopName += " @ ";
     desktopName += (const char *)gSerialNo;
+#endif
 
     rfb::Configuration::enableServerParams();
 

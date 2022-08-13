@@ -422,6 +422,7 @@ static const int spec4[] = {26, 43, 27, 215, 14};
 static const int spec4sh[] = {1, 1, 1, 1, 0};
 
 int InputDevice::keysym2scancode(uint32_t c, int* sh, int* alt) {
+    ALOGV("Got key %d", c);
     int real = 1;
     if ('a' <= c && c <= 'z') return qwerty[c - 'a'];
     if ('A' <= c && c <= 'Z') {

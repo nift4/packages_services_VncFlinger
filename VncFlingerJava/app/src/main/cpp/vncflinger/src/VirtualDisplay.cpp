@@ -52,13 +52,15 @@ VirtualDisplay::VirtualDisplay(ui::Size* mode, ui::Rotation* state,
 
     mCpuConsumer->setFrameAvailableListener(listener);
 
-    mDisplayToken = SurfaceComposerClient::createDisplay(String8("VNC-VirtualDisplay"), true /*secure*/);
+	/*
+    mDisplayToken = SurfaceComposerClient::createDisplay(String8("VNC-VirtualDisplay"), true);
 
     SurfaceComposerClient::Transaction t;
     t.setDisplaySurface(mDisplayToken, mProducer);
     t.setDisplayProjection(mDisplayToken, *state, mSourceRect, displayRect);
     t.setDisplayLayerStack(mDisplayToken, mLayerId);
     t.apply();
+	*/
 
     ALOGV("Virtual display (%ux%u [viewport=%ux%u] created", width, height, displayRect.getWidth(),
           displayRect.getHeight());

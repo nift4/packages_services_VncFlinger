@@ -1,5 +1,8 @@
 #define LOG_TAG "VNCFlinger"
 #include <utils/Log.h>
+#include <jni.h>
+#include <gui/Surface.h>
+#include <android/native_window_jni.h>
 
 #include <fcntl.h>
 #include <fstream>
@@ -30,7 +33,6 @@
 using namespace vncflinger;
 using namespace android;
 
-static char* gProgramName;
 static bool gCaughtSignal = false;
 static std::string mPidFile;
 static char gSerialNo[PROPERTY_VALUE_MAX];
@@ -40,6 +42,11 @@ static rfb::BoolParameter localhostOnly("localhost", "Only allow connections fro
 static rfb::StringParameter rfbunixpath("rfbunixpath", "Unix socket to listen for RFB protocol", "");
 static rfb::IntParameter rfbunixmode("rfbunixmode", "Unix socket access mode", 0600);
 
+static sp<AndroidDesktop> desktop = NULL;
+static JNIEnv* gEnv;
+static jobject gThiz;
+static jmethodID gMethod;
+
 static void printVersion(FILE* fp) {
     fprintf(fp, "VNCFlinger 1.0");
 }
@@ -47,76 +54,111 @@ static void printVersion(FILE* fp) {
 static void CleanupSignalHandler(int)
 {
     ALOGI("You killed me - cleaning up");
+	desktop = NULL;
     if (mPidFile.length() != 0) {
         remove(mPidFile.c_str());
     }
     exit(1);
 }
 
-static void usage() {
-    printVersion(stderr);
-    fprintf(stderr, "\nUsage: %s [<parameters>]\n", gProgramName);
-    fprintf(stderr, "       %s --version\n", gProgramName);
-    fprintf(stderr,
-            "\n"
-            "Parameters can be turned on with -<param> or off with -<param>=0\n"
-            "Parameters which take a value can be specified as "
-            "-<param> <value>\n"
-            "Other valid forms are <param>=<value> -<param>=<value> "
-            "--<param>=<value>\n"
-            "Parameter names are case-insensitive.  The parameters are:\n\n");
-    rfb::Configuration::listParams(79, 14);
-    exit(1);
+void runJniCallback() {
+	gEnv->CallVoidMethod(gThiz, gMethod);
 }
 
-int old_main(int argc, char** argv) {
-    rfb::initAndroidLogger();
-    rfb::LogWriter::setLogParams("*:android:30");
+int old_main1(int argc, char** argv);
+int old_main2();
 
-    gProgramName = argv[0];
-    property_get("ro.build.product", gSerialNo, "");
-#ifdef DESKTOP_NAME
-    std::string desktopName = DESKTOP_NAME;
-#else
-    std::string desktopName = "VNCFlinger";
-    desktopName += " @ ";
-    desktopName += (const char *)gSerialNo;
-#endif
+extern "C" jint Java_org_eu_droid_1ng_vncflinger_MainActivity_initializeVncFlinger(JNIEnv *env,
+                                                                                   jobject thiz,
+																				   jobjectArray command_line_args) {
+	const int argc = env->GetArrayLength(command_line_args);
+	char* argv[argc];
+	for (int i=0; i<argc; i++) {
+		jstring o = (jstring)(env->GetObjectArrayElement(command_line_args, i));
+		const char *cmdline_temp = env->GetStringUTFChars(o, NULL);
+		argv[i] = strdup(cmdline_temp);
+		env->ReleaseStringUTFChars(o, cmdline_temp);
+	}
+	gThiz = thiz; gEnv = env;
+	gMethod = env->GetMethodID(env->GetObjectClass(thiz), "callback", "()V");
+	return old_main1(argc, argv);
+}
 
-    rfb::Configuration::enableServerParams();
+extern "C" jobject Java_org_eu_droid_1ng_vncflinger_MainActivity_getSurface(JNIEnv * env,
+																			jobject thiz
+) {
+	if (desktop == NULL)
+		return NULL;
+	if (desktop->mVirtualDisplay == NULL)
+		return NULL;
+	if (desktop->mVirtualDisplay->getProducer() == NULL)
+		return NULL;
+	ANativeWindow* w = new Surface(desktop->mVirtualDisplay->getProducer(), true);
+	if (w == NULL)
+		return NULL;
+	return ANativeWindow_toSurface(env, w);
+}
+
+extern "C" jint Java_org_eu_droid_1ng_vncflinger_MainActivity_mainLoop(JNIEnv * env,
+                                                                       jobject thiz
+) {
+	return old_main2();
+}
+
+extern "C" void Java_org_eu_droid_1ng_vncflinger_MainActivity_quit(JNIEnv *env, jobject thiz) {
+	gCaughtSignal = true;
+}
+
+int old_main1(int argc, char** argv) {
+	rfb::initAndroidLogger();
+	rfb::LogWriter::setLogParams("*:android:30");
+
+	rfb::Configuration::enableServerParams();
 
 #ifdef SIGHUP
-    signal(SIGHUP, CleanupSignalHandler);
+	signal(SIGHUP, CleanupSignalHandler);
 #endif
-    signal(SIGINT, CleanupSignalHandler);
-    signal(SIGTERM, CleanupSignalHandler);
+	signal(SIGINT, CleanupSignalHandler);
+	signal(SIGTERM, CleanupSignalHandler);
 
-    for (int i = 1; i < argc; i++) {
-        if (rfb::Configuration::setParam(argv[i])) continue;
+	for (int i = 1; i < argc; i++) {
+		if (rfb::Configuration::setParam(argv[i])) continue;
 
-        if (argv[i][0] == '-') {
-            if (i + 1 < argc) {
-                if (rfb::Configuration::setParam(&argv[i][1], argv[i + 1])) {
-                    i++;
-                    continue;
-                }
-            }
-            if (strcmp(argv[i], "-pid") == 0) {
-                if (i + 1 < argc) {
-                    mPidFile = std::string(argv[i + 1]);
-                    i++;
-                    continue;
-                }
-            }
-            if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "-version") == 0 ||
-                strcmp(argv[i], "--version") == 0) {
-                printVersion(stdout);
-                return 0;
-            }
-            usage();
-        }
-        usage();
-    }
+		if (argv[i][0] == '-') {
+			if (i + 1 < argc) {
+				if (rfb::Configuration::setParam(&argv[i][1], argv[i + 1])) {
+					i++;
+					continue;
+				}
+			}
+			if (strcmp(argv[i], "-pid") == 0) {
+				if (i + 1 < argc) {
+					mPidFile = std::string(argv[i + 1]);
+					i++;
+					continue;
+				}
+			}
+			if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "-version") == 0 ||
+			    strcmp(argv[i], "--version") == 0) {
+				printVersion(stdout);
+				return 1;
+			}
+			return 1;
+		}
+		return 1;
+	}
+
+	return 0;
+}
+int old_main2() {
+	property_get("ro.build.product", gSerialNo, "");
+#ifdef DESKTOP_NAME
+	std::string desktopName = DESKTOP_NAME;
+#else
+	std::string desktopName = "VNCFlinger";
+	desktopName += " @ ";
+	desktopName += (const char *) gSerialNo;
+#endif
 
     sp<ProcessState> self = ProcessState::self();
     self->startThreadPool();
@@ -124,7 +166,7 @@ int old_main(int argc, char** argv) {
     std::list<network::SocketListener*> listeners;
     int ret = 0;
     try {
-        sp<AndroidDesktop> desktop = new AndroidDesktop();
+        desktop = new AndroidDesktop();
         rfb::VNCServerST server(desktopName.c_str(), desktop.get());
 
         if (rfbunixpath.getValueStr()[0] != '\0') {
@@ -241,6 +283,7 @@ int old_main(int argc, char** argv) {
         ALOGE("%s", e.str());
         ret = 1;
     }
+	desktop = NULL;
     ALOGI("Bye - cleaning up");
     if (mPidFile.length() != 0) {
         remove(mPidFile.c_str());

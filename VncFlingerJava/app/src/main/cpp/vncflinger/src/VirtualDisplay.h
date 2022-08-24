@@ -45,6 +45,10 @@ class VirtualDisplay : public RefBase {
         return mSourceRect;
     }
 
+    IGraphicBufferProducer* getProducer() {
+        return mProducer.get();
+    }
+
     CpuConsumer* getConsumer() {
         return mCpuConsumer.get();
     }

@@ -12,7 +12,7 @@ LOCAL_SRC_FILES := \
 
 LOCAL_C_INCLUDES += \
     $(LOCAL_PATH)/src \
-    external/tigervnc/common \
+    external/tigervnc/common
 
 LOCAL_SHARED_LIBRARIES := \
     libbinder \
@@ -24,7 +24,9 @@ LOCAL_SHARED_LIBRARIES := \
     libui \
     libutils \
     libz \
-    liblog
+    liblog \
+    libnativewindow \
+    libandroid
 
 LOCAL_STATIC_LIBRARIES += \
     libtigervnc
@@ -34,7 +36,7 @@ LOCAL_CFLAGS += -Ofast -Werror -fexceptions -Wno-implicit-fallthrough -Wno-unuse
 
 #LOCAL_CFLAGS += -DLOG_NDEBUG=0
 
-LOCAL_MODULE := libvncflinger
+LOCAL_MODULE := libjni_vncflinger
 
 LOCAL_MODULE_TAGS := optional
 

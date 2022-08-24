@@ -235,6 +235,8 @@ rfb::ScreenSet AndroidDesktop::computeScreenLayout() {
     mServer->setScreenLayout(screens);
 }
 
+//main.cpp
+extern void runJniCallback();
 void AndroidDesktop::onBufferDimensionsChanged(uint32_t width, uint32_t height) {
     ALOGV("Dimensions changed: old=(%ux%u) new=(%ux%u)", mDisplayRect.getWidth(),
           mDisplayRect.getHeight(), width, height);
@@ -249,6 +251,8 @@ void AndroidDesktop::onBufferDimensionsChanged(uint32_t width, uint32_t height) 
 
     mServer->setPixelBuffer(mPixels.get(), computeScreenLayout());
     mServer->setScreenLayout(computeScreenLayout());
+
+    runJniCallback();
 }
 
 void AndroidDesktop::queryConnection(network::Socket* sock, __unused_attr const char* userName) {

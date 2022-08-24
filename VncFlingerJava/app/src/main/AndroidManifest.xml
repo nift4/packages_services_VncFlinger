@@ -3,6 +3,12 @@
 	xmlns:tools="http://schemas.android.com/tools"
     package="org.eu.droid_ng.vncflinger">
 
+	<uses-permission android:name="android.permission.CAPTURE_SECURE_VIDEO_OUTPUT"
+		tools:ignore="ProtectedPermissions" />
+	<uses-permission android:name="android.permission.ADD_TRUSTED_DISPLAY"
+		tools:ignore="ProtectedPermissions" />
+	<uses-permission android:name="android.permission.INTERNET" />
+
 	<application
 		android:label="VncFlingerJava"
 		android:sharedUserId="android.uid.system"

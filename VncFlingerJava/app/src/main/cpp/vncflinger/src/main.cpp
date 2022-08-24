@@ -69,7 +69,7 @@ static void usage() {
     exit(1);
 }
 
-int main(int argc, char** argv) {
+int old_main(int argc, char** argv) {
     rfb::initAndroidLogger();
     rfb::LogWriter::setLogParams("*:android:30");
 

@@ -47,11 +47,9 @@ public class MainActivity extends Activity {
 	}
 
 	public void workerThread() {
-		if (initializeVncFlinger(args) == 0) {
-			callback();
+		if (initializeVncFlinger(args) == 0)
 			if (mainLoop() == 0)
 				return;
-		}
 		onError();
 	}
 

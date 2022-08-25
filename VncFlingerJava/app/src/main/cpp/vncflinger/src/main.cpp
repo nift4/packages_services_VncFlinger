@@ -87,16 +87,28 @@ extern "C" jint Java_org_eu_droid_1ng_vncflinger_MainActivity_initializeVncFling
 extern "C" jobject Java_org_eu_droid_1ng_vncflinger_MainActivity_getSurface(JNIEnv * env,
 																			jobject thiz
 ) {
-	if (desktop == NULL)
+	if (desktop == NULL) {
+		ALOGV("getSurface: desktop == NULL");
 		return NULL;
-	if (desktop->mVirtualDisplay == NULL)
+	}
+	if (desktop->mVirtualDisplay == NULL){
+		ALOGW("getSurface: mVirtualDisplay == NULL");
 		return NULL;
-	if (desktop->mVirtualDisplay->getProducer() == NULL)
+	}
+	if (desktop->mVirtualDisplay->getProducer() == NULL){
+		ALOGW("getSurface: getProducer() == NULL");
 		return NULL;
+	}
 	ANativeWindow* w = new Surface(desktop->mVirtualDisplay->getProducer(), true);
-	if (w == NULL)
+	if (w == NULL) {
+		ALOGE("getSurface: w == NULL");
 		return NULL;
-	return ANativeWindow_toSurface(env, w);
+	}
+	jobject a = ANativeWindow_toSurface(env, w);
+	if (a == NULL) {
+		ALOGE("getSurface: a == NULL");
+	}
+	return a;
 }
 
 extern "C" jint Java_org_eu_droid_1ng_vncflinger_MainActivity_mainLoop(JNIEnv * env,

@@ -20,6 +20,7 @@
 
 #include <future>
 
+#include "DirectInputCodes.h"
 #include "InputDevice.h"
 
 #include <fcntl.h>
@@ -30,6 +31,11 @@
 
 #include <linux/input.h>
 #include <linux/uinput.h>
+
+#define XK_MISCELLANY
+#define XK_LATIN1
+#define XK_CURRENCY
+#include <rfb/keysymdef.h>
 
 using namespace android;
 
@@ -68,6 +74,259 @@ static const struct UInputOptions mOptions[] = {
     {UI_SET_ABSBIT, ABS_Y},
     {UI_SET_EVBIT, EV_SYN},
 };
+
+
+// The keysymToAscii table transforms a couple of awkward keysyms into their
+// ASCII equivalents.
+struct keysymToAscii_t {
+    uint32_t keysym;
+    uint32_t ascii;
+};
+
+keysymToAscii_t keysymToAscii[] = {
+    {XK_KP_Space, ' '},
+    {XK_KP_Equal, '='},
+};
+
+uint32_t latin1DeadChars[] = {
+    XK_grave,
+    XK_acute,
+    XK_asciicircum,
+    XK_diaeresis,
+    XK_degree,
+    XK_cedilla,
+    XK_asciitilde
+};
+
+struct deadCharsToAltChar_t {
+    uint32_t deadChar;
+    uint32_t altChar;
+};
+
+deadCharsToAltChar_t deadCharsToAltChar[] = {
+    {XK_grave, DIK_GRAVE},
+    {XK_acute, DIK_E},
+    {XK_asciicircum, DIK_I},
+    {XK_diaeresis, DIK_U},
+    {XK_degree, 0},
+    {XK_cedilla, 0},
+    {XK_asciitilde, DIK_N}
+};
+
+struct latin1ToDeadChars_t {
+    uint32_t latin1Char;
+    uint32_t deadChar;
+    uint32_t baseChar;
+};
+
+latin1ToDeadChars_t latin1ToDeadChars[] = {
+    {XK_Agrave, XK_grave, XK_A},
+    {XK_Egrave, XK_grave, XK_E},
+    {XK_Igrave, XK_grave, XK_I},
+    {XK_Ograve, XK_grave, XK_O},
+    {XK_Ugrave, XK_grave, XK_U},
+    {XK_agrave, XK_grave, XK_a},
+    {XK_egrave, XK_grave, XK_e},
+    {XK_igrave, XK_grave, XK_i},
+    {XK_ograve, XK_grave, XK_o},
+    {XK_ugrave, XK_grave, XK_u},
+
+    {XK_Aacute, XK_acute, XK_A},
+    {XK_Eacute, XK_acute, XK_E},
+    {XK_Iacute, XK_acute, XK_I},
+    {XK_Oacute, XK_acute, XK_O},
+    {XK_Uacute, XK_acute, XK_U},
+    {XK_Yacute, XK_acute, XK_Y},
+    {XK_aacute, XK_acute, XK_a},
+    {XK_eacute, XK_acute, XK_e},
+    {XK_iacute, XK_acute, XK_i},
+    {XK_oacute, XK_acute, XK_o},
+    {XK_uacute, XK_acute, XK_u},
+    {XK_yacute, XK_acute, XK_y},
+
+    {XK_Acircumflex, XK_asciicircum, XK_A},
+    {XK_Ecircumflex, XK_asciicircum, XK_E},
+    {XK_Icircumflex, XK_asciicircum, XK_I},
+    {XK_Ocircumflex, XK_asciicircum, XK_O},
+    {XK_Ucircumflex, XK_asciicircum, XK_U},
+    {XK_acircumflex, XK_asciicircum, XK_a},
+    {XK_ecircumflex, XK_asciicircum, XK_e},
+    {XK_icircumflex, XK_asciicircum, XK_i},
+    {XK_ocircumflex, XK_asciicircum, XK_o},
+    {XK_ucircumflex, XK_asciicircum, XK_u},
+
+    {XK_Adiaeresis, XK_diaeresis, XK_A},
+    {XK_Ediaeresis, XK_diaeresis, XK_E},
+    {XK_Idiaeresis, XK_diaeresis, XK_I},
+    {XK_Odiaeresis, XK_diaeresis, XK_O},
+    {XK_Udiaeresis, XK_diaeresis, XK_U},
+    {XK_adiaeresis, XK_diaeresis, XK_a},
+    {XK_ediaeresis, XK_diaeresis, XK_e},
+    {XK_idiaeresis, XK_diaeresis, XK_i},
+    {XK_odiaeresis, XK_diaeresis, XK_o},
+    {XK_udiaeresis, XK_diaeresis, XK_u},
+    {XK_ydiaeresis, XK_diaeresis, XK_y},
+
+    {XK_Aring, XK_degree, XK_A},
+    {XK_aring, XK_degree, XK_a},
+
+    {XK_Ccedilla, XK_cedilla, XK_C},
+    {XK_ccedilla, XK_cedilla, XK_c},
+
+    {XK_Atilde, XK_asciitilde, XK_A},
+    {XK_Ntilde, XK_asciitilde, XK_N},
+    {XK_Otilde, XK_asciitilde, XK_O},
+    {XK_atilde, XK_asciitilde, XK_a},
+    {XK_ntilde, XK_asciitilde, XK_n},
+    {XK_otilde, XK_asciitilde, XK_o},
+};
+
+struct spicialKeysymToDirectKey_t {
+    uint32_t keysym;
+    uint32_t directKey;
+};
+
+static spicialKeysymToDirectKey_t spicialKeysymToDirectKey[] = {
+    {XK_BackSpace, DIK_BACK},
+    {XK_Tab, DIK_TAB},
+    {XK_Return, DIK_RETURN},
+    {XK_Pause, DIK_PAUSE},
+    {XK_Escape, DIK_ESCAPE},
+    {XK_Delete, DIK_DELETE},
+
+    // Cursor control & motion
+    {XK_Home, DIK_HOME},
+    {XK_Left, DIK_LEFT},
+    {XK_Up, DIK_UP},
+    {XK_Right, DIK_RIGHT},
+    {XK_Down, DIK_DOWN},
+    {XK_Page_Up, DIK_PRIOR},
+    {XK_Page_Down, DIK_NEXT},
+    {XK_End, DIK_END},
+
+    // Misc functions
+    {XK_Insert, DIK_INSERT},
+
+    // Auxiliary Functions - must come before XK_KP_F1, etc
+    {XK_F1, DIK_F1},
+    {XK_F2, DIK_F2},
+    {XK_F3, DIK_F3},
+    {XK_F4, DIK_F4},
+    {XK_F5, DIK_F5},
+    {XK_F6, DIK_F6},
+    {XK_F7, DIK_F7},
+    {XK_F8, DIK_F8},
+    {XK_F9, DIK_F9},
+    {XK_F10, DIK_F10},
+    {XK_F11, DIK_F11},
+    {XK_F12, DIK_F12},
+    {XK_F13, DIK_F13},
+    {XK_F14, DIK_F14},
+    {XK_F15, DIK_F15},
+
+    // Keypad Functions, keypad numbers
+    {XK_KP_Tab, DIK_TAB},
+    {XK_KP_Enter, DIK_RETURN},
+    {XK_KP_F1, DIK_F1},
+    {XK_KP_F2, DIK_F2},
+    {XK_KP_F3, DIK_F3},
+    {XK_KP_F4, DIK_F4},
+    {XK_KP_Home, DIK_HOME},
+    {XK_KP_Left, DIK_LEFT},
+    {XK_KP_Up, DIK_UP},
+    {XK_KP_Right, DIK_RIGHT},
+    {XK_KP_Down, DIK_DOWN},
+    {XK_KP_End, DIK_END},
+    {XK_KP_Page_Up, DIK_PRIOR},
+    {XK_KP_Page_Down, DIK_NEXT},
+    {XK_KP_Insert, DIK_INSERT},
+    {XK_KP_Delete, DIK_DELETE},
+    {XK_KP_Multiply, DIK_MULTIPLY},
+    {XK_KP_Add, DIK_ADD},
+    {XK_KP_Separator, DIK_COMMA},
+    {XK_KP_Subtract, DIK_SUBTRACT},
+    {XK_KP_Decimal, DIK_DECIMAL},
+    {XK_KP_Divide, DIK_DIVIDE},
+
+    {XK_KP_0, DIK_NUMPAD0},
+    {XK_KP_1, DIK_NUMPAD1},
+    {XK_KP_2, DIK_NUMPAD2},
+    {XK_KP_3, DIK_NUMPAD3},
+    {XK_KP_4, DIK_NUMPAD4},
+    {XK_KP_5, DIK_NUMPAD5},
+    {XK_KP_6, DIK_NUMPAD6},
+    {XK_KP_7, DIK_NUMPAD7},
+    {XK_KP_8, DIK_NUMPAD8},
+    {XK_KP_9, DIK_NUMPAD9},
+
+    // Modifiers
+    {XK_Shift_L, DIK_LSHIFT},
+    {XK_Shift_R, DIK_RSHIFT},
+    {XK_Control_L, DIK_LCONTROL},
+    {XK_Control_R, DIK_RCONTROL},
+    {XK_Alt_L, DIK_LMENU},
+    {XK_Alt_R, DIK_RMENU},
+    {XK_Meta_L, DIK_LMENU},
+    {XK_Meta_R, DIK_RMENU},
+
+    // Left & Right Windows keys & Windows Menu Key
+    {XK_Super_L, DIK_LWIN},
+    {XK_Super_R, DIK_RWIN},
+    {XK_Menu, DIK_APPS},
+
+    // Japanese stuff - almost certainly wrong...
+    {XK_Kanji, DIK_KANJI},
+    {XK_Kana_Shift, DIK_KANA},
+};
+
+struct symbolKeysymToDirectKey_t {
+    uint32_t keysym;
+    uint32_t directKey;
+    bool needShift;
+};
+
+static symbolKeysymToDirectKey_t symbolKeysymToDirectKey[] = {
+    {XK_space, DIK_SPACE, false},
+    {XK_exclam, DIK_1, true},
+    {XK_quotedbl, DIK_APOSTROPHE, true},
+    {XK_numbersign, DIK_3, true},
+    {XK_dollar, DIK_4, true},
+    {XK_percent, DIK_5, true},
+    {XK_ampersand, DIK_7, true},
+    {XK_apostrophe, DIK_APOSTROPHE, false},
+    {XK_parenleft, DIK_9, true},
+    {XK_parenright, DIK_0, true},
+    {XK_asterisk, DIK_8, true},
+    {XK_plus, DIK_EQUALS, true},
+    {XK_comma, DIK_COMMA, false},
+    {XK_minus, DIK_MINUS, false},
+    {XK_period, DIK_PERIOD, false},
+    {XK_slash, DIK_SLASH, false},
+
+    {XK_colon, DIK_SEMICOLON, true},
+    {XK_semicolon, DIK_SEMICOLON, false},
+    {XK_less, DIK_COMMA, true},
+    {XK_equal, DIK_EQUALS, false},
+    {XK_greater, DIK_PERIOD, true},
+    {XK_question, DIK_SLASH, true},
+    {XK_at, DIK_2, true},
+
+    {XK_bracketleft, DIK_LBRACKET, false},
+    {XK_backslash, DIK_BACKSLASH, false},
+    {XK_bracketright, DIK_RBRACKET, false},
+    {XK_asciicircum, DIK_6, true},
+    {XK_underscore, DIK_MINUS, true},
+    {XK_grave, DIK_GRAVE, false},
+
+    {XK_braceleft, DIK_LBRACKET, true},
+    {XK_bar, DIK_BACKSLASH, true},
+    {XK_braceright, DIK_RBRACKET, true},
+    {XK_asciitilde, DIK_GRAVE, true}
+};
+
+// q,w,e,r,t,y,u,i,o,p,a,s,d,f,g,h,j,k,l,z,x,c,v,b,n,m
+static const int qwerty[] = {30, 48, 46, 32, 18, 33, 34, 35, 23, 36, 37, 38, 50,
+                             49, 24, 25, 16, 19, 31, 20, 22, 47, 17, 45, 21, 44};
 
 status_t InputDevice::start_async(uint32_t width, uint32_t height) {
     // don't block the caller since this can take a few seconds
@@ -257,7 +516,54 @@ status_t InputDevice::click(uint16_t code) {
     return release(code);
 }
 
-void InputDevice::keyEvent(bool down, uint32_t key) {
+status_t InputDevice::doKeyboardEvent(uint16_t code, bool down) {
+    inject(EV_SYN, SYN_REPORT, 0);
+    if (down) {
+        if (press(code) != OK) {
+            ALOGE("Failed to inject key %d press event:%d (%s)", code, errno, strerror(errno));
+            return errno;
+        }
+    } else {
+        if (release(code) != OK) {
+            ALOGE("Failed to inject key %d release event:%d (%s)", code, errno, strerror(errno));
+            return errno;
+        }
+    }
+    inject(EV_SYN, SYN_REPORT, 0);
+    return OK;
+}
+
+status_t InputDevice::doBasicKeyEvent(uint16_t code, bool down) {
+    bool needShift = false;
+    int scanCode = 0;
+
+    // QWERTY and Numbers
+    if ('a' <= code && code <= 'z') scanCode = qwerty[code - 'a'];
+    if ('A' <= code && code <= 'Z') {
+        needShift = true;
+        scanCode = qwerty[code - 'A'];
+    }
+    if ('1' <= code && code <= '9') scanCode = (code - '1' + 2);
+    if (code == '0') scanCode = DIK_0;
+
+    // Symbols
+    for (unsigned int i = 0; i < sizeof(symbolKeysymToDirectKey) / sizeof(symbolKeysymToDirectKey_t); i++) {
+        if (symbolKeysymToDirectKey[i].keysym == code) {
+            scanCode = symbolKeysymToDirectKey[i].directKey;
+            needShift = symbolKeysymToDirectKey[i].needShift;
+            break;
+        }
+    }
+
+    if (scanCode == 0) {
+        ALOGE("Unknown keysym %d", code);
+        return BAD_VALUE;
+    }
+    if (needShift) doKeyboardEvent(DIK_LSHIFT, down);
+    return doKeyboardEvent(scanCode, down);
+}
+
+void InputDevice::keyEvent(bool down, uint32_t keysym) {
     int code;
     int sh = 0;
     int alt = 0;
@@ -265,35 +571,49 @@ void InputDevice::keyEvent(bool down, uint32_t key) {
     Mutex::Autolock _l(mLock);
     if (!mOpened) return;
 
-    if ((code = keysym2scancode(key, &sh, &alt))) {
-        int ret = 0;
-
-        if (key && down) {
-            if (sh) press(42);   // left shift
-            if (alt) press(56);  // left alt
-
-            inject(EV_SYN, SYN_REPORT, 0);
-
-            ret = press(code);
-            if (ret != 0) {
-                ALOGE("Error: %d (%s)\n", errno, strerror(errno));
-            }
-
-            inject(EV_SYN, SYN_REPORT, 0);
-
-            ret = release(code);
-            if (ret != 0) {
-                ALOGE("Error: %d (%s)\n", errno, strerror(errno));
-            }
-
-            inject(EV_SYN, SYN_REPORT, 0);
-
-            if (alt) release(56);  // left alt
-            if (sh) release(42);   // left shift
-
-            inject(EV_SYN, SYN_REPORT, 0);
+    // Fix unknown keys
+    for (unsigned int i = 0; i < sizeof(keysymToAscii) / sizeof(keysymToAscii_t); i++) {
+        if (keysymToAscii[i].keysym == keysym) {
+            keysym = keysymToAscii[i].ascii;
+            break;
         }
     }
+
+    // Latin Keys
+    for (unsigned int j = 0; j < sizeof(latin1ToDeadChars) / sizeof(latin1ToDeadChars_t); j++) {
+        if (keysym == latin1ToDeadChars[j].latin1Char) {
+            for (unsigned int i = 0; i < sizeof(deadCharsToAltChar) / sizeof(deadCharsToAltChar_t); i++) {
+                if (latin1ToDeadChars[j].deadChar == deadCharsToAltChar[i].deadChar) {
+                    if (deadCharsToAltChar[i].altChar == 0) {
+                        // Alt + BaseChar
+                        doKeyboardEvent(DIK_LMENU, down);
+                        doBasicKeyEvent(latin1ToDeadChars[j].baseChar, down);
+                    } else {
+                        // Alt + AltChar, BaseChar
+                        if (down) {
+                            doKeyboardEvent(DIK_LMENU, true);
+                            doKeyboardEvent(deadCharsToAltChar[i].altChar, true);
+                            doKeyboardEvent(DIK_LMENU, false);
+                            doKeyboardEvent(deadCharsToAltChar[i].altChar, false);
+                        }
+                        doBasicKeyEvent(latin1ToDeadChars[j].baseChar, down);
+                    }
+                    return;
+                }
+            }
+        }
+    }
+
+    // Special Keys
+    for (unsigned int i = 0; i < sizeof(spicialKeysymToDirectKey) / sizeof(spicialKeysymToDirectKey_t); i++) {
+        if (spicialKeysymToDirectKey[i].keysym == keysym) {
+            doKeyboardEvent(spicialKeysymToDirectKey[i].directKey, down);
+            return;
+        }
+    }
+
+    // Basic Keys
+    doBasicKeyEvent(keysym, down);
 }
 
 void InputDevice::pointerEvent(int buttonMask, int x, int y) {
@@ -403,213 +723,4 @@ void InputDevice::pointerEvent(int buttonMask, int x, int y) {
         inject(EV_REL, REL_WHEEL, -1);
         inject(EV_SYN, SYN_REPORT, 0);
     }
-}
-
-// q,w,e,r,t,y,u,i,o,p,a,s,d,f,g,h,j,k,l,z,x,c,v,b,n,m
-static const int qwerty[] = {30, 48, 46, 32, 18, 33, 34, 35, 23, 36, 37, 38, 50,
-                             49, 24, 25, 16, 19, 31, 20, 22, 47, 17, 45, 21, 44};
-// ,!,",#,$,%,&,',(,),*,+,,,-,.,/
-static const int spec1[] = {57, 2, 40, 4, 5, 6, 8, 40, 10, 11, 9, 13, 51, 12, 52, 52};
-static const int spec1sh[] = {0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1};
-// :,;,<,=,>,?,@
-static const int spec2[] = {39, 39, 227, 13, 228, 53, 3};
-static const int spec2sh[] = {1, 0, 1, 1, 1, 1, 1};
-// [,\,],^,_,`
-static const int spec3[] = {26, 43, 27, 7, 12, 399};
-static const int spec3sh[] = {0, 0, 0, 1, 1, 0};
-// {,|,},~
-static const int spec4[] = {26, 43, 27, 215, 14};
-static const int spec4sh[] = {1, 1, 1, 1, 0};
-
-int InputDevice::keysym2scancode(uint32_t c, int* sh, int* alt) {
-    ALOGV("Got key %d", c);
-    int real = 1;
-    if ('a' <= c && c <= 'z') return qwerty[c - 'a'];
-    if ('A' <= c && c <= 'Z') {
-        (*sh) = 1;
-        return qwerty[c - 'A'];
-    }
-    if ('1' <= c && c <= '9') return c - '1' + 2;
-    if (c == '0') return 11;
-    if (32 <= c && c <= 47) {
-        (*sh) = spec1sh[c - 32];
-        return spec1[c - 32];
-    }
-    if (58 <= c && c <= 64) {
-        (*sh) = spec2sh[c - 58];
-        return spec2[c - 58];
-    }
-    if (91 <= c && c <= 96) {
-        (*sh) = spec3sh[c - 91];
-        return spec3[c - 91];
-    }
-    if (123 <= c && c <= 127) {
-        (*sh) = spec4sh[c - 123];
-        return spec4[c - 123];
-    }
-    switch (c) {
-        case 0xff08:
-            return 14;  // backspace
-        case 0xff09:
-            return 15;  // tab
-        case 1:
-            (*alt) = 1;
-            return 34;  // ctrl+a
-        case 3:
-            (*alt) = 1;
-            return 46;  // ctrl+c
-        case 4:
-            (*alt) = 1;
-            return 32;  // ctrl+d
-        case 18:
-            (*alt) = 1;
-            return 31;  // ctrl+r
-        case 0xff0D:
-            return 28;  // enter
-        case 0xff1B:
-            return 158;  // esc -> back
-        case 0xFF51:
-            return 105;  // left -> DPAD_LEFT
-        case 0xFF53:
-            return 106;  // right -> DPAD_RIGHT
-        case 0xFF54:
-            return 108;  // down -> DPAD_DOWN
-        case 0xFF52:
-            return 103;  // up -> DPAD_UP
-        // case 360:
-        //	return 232;// end -> DPAD_CENTER (ball click)
-        case 0xff50:
-            return KEY_HOME;  // home
-        case 0xffff:
-            return 158;  // del -> back
-        case 0xff55:
-            return 229;  // PgUp -> menu
-        case 0xffcf:
-            return 127;  // F2 -> search
-        case 0xffe3:
-            return 127;  // left ctrl -> search
-        case 0xff56:
-            return 61;  // PgUp -> call
-        case 0xff57:
-            return 107;  // End -> endcall
-        case 0xffc2:
-            return 211;  // F5 -> focus
-        case 0xffc3:
-            return 212;  // F6 -> camera
-        case 0xffc4:
-            return 150;  // F7 -> explorer
-        case 0xffc5:
-            return 155;  // F8 -> envelope
-
-        case 50081:
-        case 225:
-            (*alt) = 1;
-            if (real) return 48;  // a with acute
-            return 30;            // a with acute -> a with ring above
-
-        case 50049:
-        case 193:
-            (*sh) = 1;
-            (*alt) = 1;
-            if (real) return 48;  // A with acute
-            return 30;            // A with acute -> a with ring above
-
-        case 50089:
-        case 233:
-            (*alt) = 1;
-            return 18;  // e with acute
-
-        case 50057:
-        case 201:
-            (*sh) = 1;
-            (*alt) = 1;
-            return 18;  // E with acute
-
-        case 50093:
-        case 0xffbf:
-            (*alt) = 1;
-            if (real) return 36;  // i with acute
-            return 23;            // i with acute -> i with grave
-
-        case 50061:
-        case 205:
-            (*sh) = 1;
-            (*alt) = 1;
-            if (real) return 36;  // I with acute
-            return 23;            // I with acute -> i with grave
-
-        case 50099:
-        case 243:
-            (*alt) = 1;
-            if (real) return 16;  // o with acute
-            return 24;            // o with acute -> o with grave
-
-        case 50067:
-        case 211:
-            (*sh) = 1;
-            (*alt) = 1;
-            if (real) return 16;  // O with acute
-            return 24;            // O with acute -> o with grave
-
-        case 50102:
-        case 246:
-            (*alt) = 1;
-            return 25;  // o with diaeresis
-
-        case 50070:
-        case 214:
-            (*sh) = 1;
-            (*alt) = 1;
-            return 25;  // O with diaeresis
-
-        case 50577:
-        case 245:
-            (*alt) = 1;
-            if (real) return 19;  // Hungarian o
-            return 25;            // Hungarian o -> o with diaeresis
-
-        case 50576:
-        case 213:
-            (*sh) = 1;
-            (*alt) = 1;
-            if (real) return 19;  // Hungarian O
-            return 25;            // Hungarian O -> O with diaeresis
-
-        case 50106:
-        // case 0xffbe:
-        //	(*alt)=1;
-        // 	if (real)
-        //		return 17; //u with acute
-        // 	return 22; //u with acute -> u with grave
-        case 50074:
-        case 218:
-            (*sh) = 1;
-            (*alt) = 1;
-            if (real) return 17;  // U with acute
-            return 22;            // U with acute -> u with grave
-        case 50108:
-        case 252:
-            (*alt) = 1;
-            return 47;  // u with diaeresis
-
-        case 50076:
-        case 220:
-            (*sh) = 1;
-            (*alt) = 1;
-            return 47;  // U with diaeresis
-
-        case 50609:
-        case 251:
-            (*alt) = 1;
-            if (real) return 45;  // Hungarian u
-            return 47;            // Hungarian u -> u with diaeresis
-
-        case 50608:
-        case 219:
-            (*sh) = 1;
-            (*alt) = 1;
-            if (real) return 45;  // Hungarian U
-            return 47;            // Hungarian U -> U with diaeresis
-    }
-    return 0;
 }

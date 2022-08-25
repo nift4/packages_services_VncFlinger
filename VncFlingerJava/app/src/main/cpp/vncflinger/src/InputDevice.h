@@ -54,6 +54,8 @@ class InputDevice : public RefBase {
     status_t press(uint16_t code);
     status_t release(uint16_t code);
     status_t click(uint16_t code);
+    status_t doKeyboardEvent(uint16_t code, bool down);
+    status_t doBasicKeyEvent(uint16_t code, bool down);
 
     int keysym2scancode(uint32_t c, int* sh, int* alt);
 
@@ -71,5 +73,5 @@ class InputDevice : public RefBase {
     int32_t mLastX;
     int32_t mLastY;
 };
-};
+};  // namespace android
 #endif

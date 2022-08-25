@@ -20,6 +20,8 @@
 
 using namespace vncflinger;
 using namespace android;
+//main.cpp
+extern void runJniCallback();
 
 AndroidDesktop::AndroidDesktop() {
     mDisplayRect = Rect(0, 0);
@@ -29,6 +31,8 @@ AndroidDesktop::AndroidDesktop() {
         ALOGE("Failed to create event notifier");
         return;
     }
+
+    runJniCallback();
 }
 
 AndroidDesktop::~AndroidDesktop() {
@@ -210,6 +214,7 @@ void AndroidDesktop::onBufferDimensionsChanged(uint32_t width, uint32_t height) 
     mVirtualDisplay.clear();
     mVirtualDisplay = new VirtualDisplay(&mDisplayMode,  &mDisplayState,
                                          mPixels->width(), mPixels->height(), mLayerId, this);
+    runJniCallback();
 
     mDisplayRect = mVirtualDisplay->getDisplayRect();
 

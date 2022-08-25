@@ -68,21 +68,20 @@ public class MainActivity extends Activity {
 
 	//used from native
 	public void callback() {
-		// current context: workerThread() thread
-		new Thread(() -> {
-			try {
-				Thread.sleep(500);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-			Log.e("VNCFlinger", "new surface!!");
-			doSetDisplayProps();
-			Surface s = getSurface();
-			if (s == null)
-				Log.e("VNCFlinger", "new surface is null!");
+		Log.e("VNCFlinger", "new surface!!");
+		doSetDisplayProps();
+		Surface s = getSurface();
+		if (s == null)
+			Log.e("VNCFlinger", "new surface is null!");
+		else
 			display.setSurface(s);
-		}).start();
+		try {
+			Thread.sleep(500);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
+
 	private native int initializeVncFlinger(String[] commandLineArgs);
 	private native void setDisplayProps(int w, int h, int rotation);
 	private native int mainLoop();

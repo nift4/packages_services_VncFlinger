@@ -26,8 +26,6 @@
 #include "VirtualDisplay.h"
 
 using namespace vncflinger;
-//main.cpp
-extern void runJniCallback();
 
 VirtualDisplay::VirtualDisplay(ui::Size* mode, ui::Rotation* state,
                                uint32_t width, uint32_t height, uint32_t layerId,
@@ -53,8 +51,6 @@ VirtualDisplay::VirtualDisplay(ui::Size* mode, ui::Rotation* state,
     consumer->setDefaultBufferFormat(PIXEL_FORMAT_RGBX_8888);
 
     mCpuConsumer->setFrameAvailableListener(listener);
-
-	runJniCallback();
 
 	/*
     mDisplayToken = SurfaceComposerClient::createDisplay(String8("VNC-VirtualDisplay"), true);

@@ -21,6 +21,7 @@
 
 #include <network/Socket.h>
 #include <network/TcpSocket.h>
+#include <network/UnixSocket.h>
 #include <rfb/Configuration.h>
 #include <rfb/LogWriter.h>
 #include <rfb/Logger_android.h>
@@ -39,6 +40,7 @@ static char gSerialNo[PROPERTY_VALUE_MAX];
 
 static rfb::IntParameter rfbport("rfbport", "TCP port to listen for RFB protocol", 5900);
 static rfb::BoolParameter localhostOnly("localhost", "Only allow connections from localhost", false);
+static rfb::BoolParameter rfbunixandroid("rfbunixandroid", "Use android control socket to create UNIX socket", true);
 static rfb::StringParameter rfbunixpath("rfbunixpath", "Unix socket to listen for RFB protocol", "");
 static rfb::IntParameter rfbunixmode("rfbunixmode", "Unix socket access mode", 0600);
 
@@ -100,6 +102,8 @@ extern "C" jobject Java_org_eu_droid_1ng_vncflinger_MainActivity_getSurface(JNIE
 		return NULL;
 	}
 	ANativeWindow* w = new Surface(desktop->mVirtualDisplay->getProducer(), true);
+	Rect dr = desktop->mVirtualDisplay->getDisplayRect();
+	//TODO: scale buffer to dr
 	if (w == NULL) {
 		ALOGE("getSurface: w == NULL");
 		return NULL;
@@ -121,6 +125,16 @@ extern "C" void Java_org_eu_droid_1ng_vncflinger_MainActivity_quit(JNIEnv *env, 
 	gCaughtSignal = true;
 }
 
+extern "C" void Java_org_eu_droid_1ng_vncflinger_MainActivity_setDisplayProps(JNIEnv *env,
+                                                                              jobject thiz, jint w,
+                                                                              jint h, jint rotation) {
+	if (desktop == NULL) {
+		ALOGW("setDisplayProps: desktop == NULL");
+		return;
+	}
+	desktop->width = w; desktop->height = h; desktop->rotation = rotation;
+}
+
 int old_main1(int argc, char** argv) {
 	rfb::initAndroidLogger();
 	rfb::LogWriter::setLogParams("*:android:30");
@@ -134,8 +148,6 @@ int old_main1(int argc, char** argv) {
 	signal(SIGTERM, CleanupSignalHandler);
 
 	for (int i = 1; i < argc; i++) {
-		if (rfb::Configuration::setParam(argv[i])) continue;
-
 		if (argv[i][0] == '-') {
 			if (i + 1 < argc) {
 				if (rfb::Configuration::setParam(&argv[i][1], argv[i + 1])) {
@@ -143,6 +155,11 @@ int old_main1(int argc, char** argv) {
 					continue;
 				}
 			}
+		}
+
+		if (rfb::Configuration::setParam(argv[i])) continue;
+
+		if (argv[i][0] == '-') {
 			if (strcmp(argv[i], "-pid") == 0) {
 				if (i + 1 < argc) {
 					mPidFile = std::string(argv[i + 1]);
@@ -153,12 +170,16 @@ int old_main1(int argc, char** argv) {
 			if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "-version") == 0 ||
 			    strcmp(argv[i], "--version") == 0) {
 				printVersion(stdout);
-				return 1;
+				return 4;
 			}
-			return 1;
+			return 2;
 		}
-		return 1;
+
+		ALOGE("Invalid input. i=%d", i);
+		return 5;
 	}
+
+	desktop = new AndroidDesktop();
 
 	return 0;
 }
@@ -178,11 +199,15 @@ int old_main2() {
     std::list<network::SocketListener*> listeners;
     int ret = 0;
     try {
-        desktop = new AndroidDesktop();
         rfb::VNCServerST server(desktopName.c_str(), desktop.get());
 
         if (rfbunixpath.getValueStr()[0] != '\0') {
-            listeners.push_back(new AndroidListener("vncflinger"));
+			if (rfbunixandroid) {
+				listeners.push_back(new AndroidListener("vncflinger"));
+			} else {
+				//listeners.push_back(new network::UnixListener(rfbunixpath, rfbunixmode));
+				listeners.push_back(new AbsUnixListener("@vncflinger"));
+			}
             ALOGI("Listening on %s (mode %04o)", (const char*)rfbunixpath, (int)rfbunixmode);
         } else {
             if (localhostOnly) {
@@ -293,7 +318,7 @@ int old_main2() {
         ret = 0;
     } catch (rdr::Exception& e) {
         ALOGE("%s", e.str());
-        ret = 1;
+        ret = 3;
     }
 	desktop = NULL;
     ALOGI("Bye - cleaning up");

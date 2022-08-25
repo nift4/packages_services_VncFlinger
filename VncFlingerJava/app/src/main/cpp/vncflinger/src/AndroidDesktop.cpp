@@ -161,33 +161,7 @@ void AndroidDesktop::pointerEvent(const rfb::Point& pos, int buttonMask) {
 
 // refresh the display dimensions
 status_t AndroidDesktop::updateDisplayInfo(bool force) {
-    char layerIdStr[92];
-    char widthStr[92];
-    char heightStr[92];
-    char rotationStr[92];
-    int layerId, width, height, rotation;
-    if (!__system_property_get("sys.vnc.layer_id", layerIdStr)) {
-        layerId = -1;
-    } else {
-        layerId = std::stoi(layerIdStr);
-    }
-    if (!__system_property_get("sys.vnc.width", widthStr)) {
-        width = -1;
-    } else {
-        width = std::stoi(widthStr);
-    }
-    if (!__system_property_get("sys.vnc.height", heightStr)) {
-        height = -1;
-    } else {
-        height = std::stoi(heightStr);
-    }
-    if (!__system_property_get("sys.vnc.rotation", rotationStr)) {
-        rotation = -1;
-    } else {
-        rotation = std::stoi(layerIdStr);
-    }
-
-    if (layerId == -1 || width == -1 || height == -1 || rotation == -1) {
+    if (mLayerId == 0) {
         const auto displayToken = SurfaceComposerClient::getInternalDisplayToken();
         if (displayToken == nullptr) {
             ALOGE("Failed to get display token\n");
@@ -212,19 +186,13 @@ status_t AndroidDesktop::updateDisplayInfo(bool force) {
         mDisplayState = tempDisplayState.orientation;
 
         mLayerId = 0; // internal display constant id
-
     } else {
         mDisplayMode = ui::Size(width, height);
         mDisplayState = rotation == 270 ? ui::ROTATION_270 : (rotation == 180 ? ui::ROTATION_180 : (rotation == 90 ? ui::ROTATION_90 : ui::ROTATION_0));
-        if (layerId != mLayerId) {
-            mLayerId = layerId;
-            onBufferDimensionsChanged(width, height);
-        }
-        mLayerId = layerId;
     }
 
     ALOGV("updateDisplayInfo: [%d:%d], rotated %d", mDisplayMode.width, mDisplayMode.height, mDisplayState);
-    mPixels->setDisplayInfo(&mDisplayMode, &mDisplayState, force);
+	mPixels->setDisplayInfo(&mDisplayMode, &mDisplayState, force);
     return NO_ERROR;
 }
 

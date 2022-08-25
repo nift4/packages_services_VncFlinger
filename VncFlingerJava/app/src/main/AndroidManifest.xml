@@ -3,9 +3,15 @@
 	xmlns:tools="http://schemas.android.com/tools"
     package="org.eu.droid_ng.vncflinger">
 
+	<uses-permission android:name="android.permission.CAPTURE_VIDEO_OUTPUT"
+		tools:ignore="ProtectedPermissions" />
 	<uses-permission android:name="android.permission.CAPTURE_SECURE_VIDEO_OUTPUT"
 		tools:ignore="ProtectedPermissions" />
 	<uses-permission android:name="android.permission.ADD_TRUSTED_DISPLAY"
+		tools:ignore="ProtectedPermissions" />
+	<uses-permission android:name="android.permission.ACCESS_SURFACE_FLINGER"
+		tools:ignore="ProtectedPermissions" />
+	<uses-permission android:name="android.permission.ROTATE_SURFACE_FLINGER"
 		tools:ignore="ProtectedPermissions" />
 	<uses-permission android:name="android.permission.INTERNET" />
 
@@ -17,6 +23,7 @@
 		tools:ignore="MissingApplicationIcon">
 		<activity
 			android:name=".MainActivity"
+			android:configChanges="density|fontScale|keyboard|keyboardHidden|layoutDirection|locale|mcc|mnc|navigation|orientation|screenLayout|screenSize|smallestScreenSize|touchscreen|uiMode"
 			android:exported="true">
 			<intent-filter>
 				<action android:name="android.intent.action.MAIN" />

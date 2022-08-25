@@ -15,6 +15,18 @@ class AndroidListener : public network::SocketListener {
   protected:
     virtual network::Socket* createSocket(int fd);
   };
+
+  class AbsUnixListener : public network::SocketListener {
+    public:
+        AbsUnixListener(const char *name);
+        virtual ~AbsUnixListener();
+
+        int getMyPort();
+
+    protected:
+        virtual network::Socket* createSocket(int fd);
+    };
+
 }
 
 #endif

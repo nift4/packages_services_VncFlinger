@@ -6,6 +6,7 @@ import android.app.Activity;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.os.Bundle;
+import android.os.SystemProperties;
 import android.util.Log;
 import android.view.Surface;
 
@@ -20,16 +21,21 @@ public class MainActivity extends Activity {
 	public int h;
 	public int dpi;
 	public String[] args;
+	public static boolean didInit = false;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		if (didInit) return;
+		didInit = true;
 		setContentView(R.layout.activity_main);
 
-		w = 1280; h = 720; dpi = 220; //TODO: get from intent
-		display = ((DisplayManager)getSystemService(DISPLAY_SERVICE)).createVirtualDisplay("VNC", w, h, dpi, null, VIRTUAL_DISPLAY_FLAG_SECURE | VIRTUAL_DISPLAY_FLAG_PUBLIC | VIRTUAL_DISPLAY_FLAG_TRUSTED | VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH | VIRTUAL_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS);
+		w = 1280; h = 720; dpi = 220; boolean touch = true; boolean relativeInput = false; //TODO: get from intent
+		args = new String[] { "vncflinger", "-rfbunixandroid", "0", "-rfbunixpath", "@vncflinger", "-SecurityTypes", "None" };
 
-		args = new String[] { "vncflinger" };
+		display = ((DisplayManager)getSystemService(DISPLAY_SERVICE)).createVirtualDisplay("VNC", w, h, dpi, null, VIRTUAL_DISPLAY_FLAG_SECURE | VIRTUAL_DISPLAY_FLAG_PUBLIC | VIRTUAL_DISPLAY_FLAG_TRUSTED | VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH | VIRTUAL_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS);
+		//SystemProperties.set("sys.vnc.touch", String.valueOf(touch ? 1 : 0));
+		//SystemProperties.set("sys.vnc.relative_input", String.valueOf(relativeInput ? 1 : 0));
 		new Thread(this::workerThread).start();
 	}
 
@@ -40,28 +46,45 @@ public class MainActivity extends Activity {
 		display.release();
 	}
 
-	private void onError() {
+	private void onError(int exitCode) {
 		quit();
 		display.release();
-		throw new IllegalStateException("VNCFlinger died");
+		throw new IllegalStateException("VNCFlinger died, exit code " + exitCode);
 	}
 
 	public void workerThread() {
-		if (initializeVncFlinger(args) == 0)
-			if (mainLoop() == 0)
+		int exitCode;
+		if ((exitCode = initializeVncFlinger(args)) == 0) {
+			doSetDisplayProps();
+			if ((exitCode = mainLoop()) == 0)
 				return;
-		onError();
+		}
+		onError(exitCode);
+	}
+
+	private void doSetDisplayProps() {
+		setDisplayProps(w, h, display.getDisplay().getRotation() * 90);
 	}
 
 	//used from native
 	public void callback() {
-		Log.e("VNCFlinger", "new surface!!");
-		Surface s = getSurface();
-		if (s == null)
-			Log.e("VNCFlinger", "new surface is null!");
-		display.setSurface(s);
+		// current context: workerThread() thread
+		new Thread(() -> {
+			try {
+				Thread.sleep(500);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			Log.e("VNCFlinger", "new surface!!");
+			doSetDisplayProps();
+			Surface s = getSurface();
+			if (s == null)
+				Log.e("VNCFlinger", "new surface is null!");
+			display.setSurface(s);
+		}).start();
 	}
 	private native int initializeVncFlinger(String[] commandLineArgs);
+	private native void setDisplayProps(int w, int h, int rotation);
 	private native int mainLoop();
 	private native void quit();
 	private native Surface getSurface();

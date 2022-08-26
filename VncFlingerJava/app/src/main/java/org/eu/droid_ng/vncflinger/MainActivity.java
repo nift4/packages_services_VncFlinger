@@ -2,9 +2,11 @@ package org.eu.droid_ng.vncflinger;
 
 import static android.hardware.display.DisplayManager.*;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
+//import android.hardware.input.InputManagerInternal;
 import android.os.Bundle;
 import android.os.SystemProperties;
 import android.util.Log;
@@ -23,6 +25,7 @@ public class MainActivity extends Activity {
 	public String[] args;
 	public static boolean didInit = false;
 
+	@SuppressLint("ServiceCast")
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -30,13 +33,18 @@ public class MainActivity extends Activity {
 		didInit = true;
 		setContentView(R.layout.activity_main);
 
-		w = 1280; h = 720; dpi = 220; boolean touch = true; boolean relativeInput = false; //TODO: get from intent
+		w = 1280; h = 720; dpi = 220; boolean touch = false; boolean relativeInput = false; //TODO: get from intent
 		args = new String[] { "vncflinger", "-rfbunixandroid", "0", "-rfbunixpath", "@vncflinger", "-SecurityTypes", "None" };
 
 		display = ((DisplayManager)getSystemService(DISPLAY_SERVICE)).createVirtualDisplay("VNC", w, h, dpi, null, VIRTUAL_DISPLAY_FLAG_SECURE | VIRTUAL_DISPLAY_FLAG_PUBLIC | VIRTUAL_DISPLAY_FLAG_TRUSTED | VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH | VIRTUAL_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS);
 		//SystemProperties.set("sys.vnc.touch", String.valueOf(touch ? 1 : 0));
 		//SystemProperties.set("sys.vnc.relative_input", String.valueOf(relativeInput ? 1 : 0));
 		new Thread(this::workerThread).start();
+
+		//function added in private api 33. revisit when moving to a13 - or ignore if its not neccessary
+		//if (touch) return;
+		//if (!((InputManagerInternal)getSystemService(INPUT_SERVICE)).setVirtualMousePointerDisplayId(display.getDisplay().getDisplayId()))
+		//	Log.w("VNCFlinger:java", "Failed to override pointer displayId");
 	}
 
 	@Override
@@ -73,13 +81,7 @@ public class MainActivity extends Activity {
 		Surface s = getSurface();
 		if (s == null)
 			Log.e("VNCFlinger", "new surface is null!");
-		else
-			display.setSurface(s);
-		try {
-			Thread.sleep(500);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+		display.setSurface(s);
 	}
 
 	private native int initializeVncFlinger(String[] commandLineArgs);

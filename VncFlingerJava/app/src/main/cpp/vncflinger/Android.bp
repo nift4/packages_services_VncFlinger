@@ -1,0 +1,42 @@
+cc_library {
+    name: "libjni_vncflinger",
+
+    srcs: [
+        "src/AndroidDesktop.cpp",
+        "src/AndroidPixelBuffer.cpp",
+        "src/AndroidSocket.cpp",
+        "src/InputDevice.cpp",
+        "src/VirtualDisplay.cpp",
+        "src/main.cpp",
+    ],
+    cflags: [
+        "-DVNCFLINGER_VERSION=1.0",
+        //"-DLOG_NDEBUG=0",
+        //"-DDESKTOP_NAME=VncDesktop",
+        "-Ofast",
+        "-Werror",
+        "-fexceptions",
+        "-Wno-implicit-fallthrough",
+        "-Wno-unused-parameter",
+    ],
+    shared_libs: [
+        "libbinder",
+        "libcrypto",
+        "libcutils",
+        "libgui",
+        "libjpeg",
+        "libssl",
+        "libui",
+        "libutils",
+        "libz",
+        "liblog",
+        "libnativewindow",
+        "libandroid",
+    ],
+    static_libs: [
+        "libtigervnc",
+    ],
+    local_include_dirs: [
+        "src",
+    ],
+}

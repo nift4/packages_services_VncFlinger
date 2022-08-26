@@ -13,5 +13,3 @@ LOCAL_PROGUARD_FLAG_FILES := ../../proguard-rules.pro
 LOCAL_JNI_SHARED_LIBRARIES := libjni_vncflinger
 LOCAL_REQUIRED_MODULES := libjni_vncflinger
 include $(BUILD_PACKAGE)
-
-include $(LOCAL_PATH)/cpp/Android.mk

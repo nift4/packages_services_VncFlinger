@@ -54,8 +54,11 @@ class AndroidDesktop : public rfb::SDesktop,
 
     virtual void queryConnection(network::Socket* sock, const char* userName);
 
+	// Virtual display controller
+	uint32_t mLayerId = -1;
     sp<VirtualDisplay> mVirtualDisplay;
-    int32_t width = 1, height = 1, rotation = 0;
+    int32_t _width = 1, _height = 1, _rotation = 0;
+	bool touch = false, relative = false;
   private:
     virtual void notify();
 
@@ -76,9 +79,6 @@ class AndroidDesktop : public rfb::SDesktop,
 
     // Pixel buffer
     sp<AndroidPixelBuffer> mPixels = NULL;
-
-    // Virtual display controller
-    uint32_t mLayerId = -1;
 
     // Primary display
     ui::Size mDisplayMode = {};

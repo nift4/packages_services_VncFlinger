@@ -8,7 +8,6 @@ import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 //import android.hardware.input.InputManagerInternal;
 import android.os.Bundle;
-import android.os.SystemProperties;
 import android.util.Log;
 import android.view.Surface;
 
@@ -19,6 +18,9 @@ public class MainActivity extends Activity {
 	}
 
 	public VirtualDisplay display;
+	public boolean isInternal;
+	public boolean touch;
+	public boolean relative;
 	public int w;
 	public int h;
 	public int dpi;
@@ -33,12 +35,10 @@ public class MainActivity extends Activity {
 		didInit = true;
 		setContentView(R.layout.activity_main);
 
-		w = 1280; h = 720; dpi = 220; boolean touch = false; boolean relativeInput = false; //TODO: get from intent
+		w = 1280; h = 720; dpi = 220; touch = false; relative = false; isInternal = true; //TODO: move activity -> service and then get from intent
 		args = new String[] { "vncflinger", "-rfbunixandroid", "0", "-rfbunixpath", "@vncflinger", "-SecurityTypes", "None" };
 
-		display = ((DisplayManager)getSystemService(DISPLAY_SERVICE)).createVirtualDisplay("VNC", w, h, dpi, null, VIRTUAL_DISPLAY_FLAG_SECURE | VIRTUAL_DISPLAY_FLAG_PUBLIC | VIRTUAL_DISPLAY_FLAG_TRUSTED | VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH | VIRTUAL_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS);
-		//SystemProperties.set("sys.vnc.touch", String.valueOf(touch ? 1 : 0));
-		//SystemProperties.set("sys.vnc.relative_input", String.valueOf(relativeInput ? 1 : 0));
+		if (!isInternal) display = ((DisplayManager)getSystemService(DISPLAY_SERVICE)).createVirtualDisplay("VNC", w, h, dpi, null, VIRTUAL_DISPLAY_FLAG_SECURE | VIRTUAL_DISPLAY_FLAG_PUBLIC | VIRTUAL_DISPLAY_FLAG_TRUSTED | VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH | VIRTUAL_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS);
 		new Thread(this::workerThread).start();
 
 		//function added in private api 33. revisit when moving to a13 - or ignore if its not neccessary
@@ -60,7 +60,7 @@ public class MainActivity extends Activity {
 		throw new IllegalStateException("VNCFlinger died, exit code " + exitCode);
 	}
 
-	public void workerThread() {
+	private void workerThread() {
 		int exitCode;
 		if ((exitCode = initializeVncFlinger(args)) == 0) {
 			doSetDisplayProps();
@@ -71,21 +71,22 @@ public class MainActivity extends Activity {
 	}
 
 	private void doSetDisplayProps() {
-		setDisplayProps(w, h, display.getDisplay().getRotation() * 90);
+		setDisplayProps(isInternal ? -1 : w, isInternal ? -1 : h, isInternal ? -1 : display.getDisplay().getRotation() * 90, isInternal ? 0 : -1, touch, relative);
 	}
 
 	//used from native
-	public void callback() {
-		Log.e("VNCFlinger", "new surface!!");
+	private void callback() {
 		doSetDisplayProps();
+		if (isInternal) return;
+		Log.i("VNCFlinger", "new surface");
 		Surface s = getSurface();
 		if (s == null)
-			Log.e("VNCFlinger", "new surface is null!");
+			Log.i("VNCFlinger", "new surface is null");
 		display.setSurface(s);
 	}
 
 	private native int initializeVncFlinger(String[] commandLineArgs);
-	private native void setDisplayProps(int w, int h, int rotation);
+	private native void setDisplayProps(int w, int h, int rotation, int layerId, boolean touch, boolean relative);
 	private native int mainLoop();
 	private native void quit();
 	private native Surface getSurface();

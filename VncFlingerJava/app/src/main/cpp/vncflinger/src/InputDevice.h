@@ -31,10 +31,10 @@ namespace android {
 
 class InputDevice : public RefBase {
   public:
-    virtual status_t start(uint32_t width, uint32_t height);
-    virtual status_t start_async(uint32_t width, uint32_t height);
+    virtual status_t start(uint32_t width, uint32_t height, bool istouch, bool relative);
+    virtual status_t start_async(uint32_t width, uint32_t height, bool istouch, bool relative);
     virtual status_t stop();
-    virtual status_t reconfigure(uint32_t width, uint32_t height);
+    virtual status_t reconfigure(uint32_t width, uint32_t height, bool istouch, bool relative);
 
     virtual void keyEvent(bool down, uint32_t key);
     virtual void pointerEvent(int buttonMask, int x, int y);

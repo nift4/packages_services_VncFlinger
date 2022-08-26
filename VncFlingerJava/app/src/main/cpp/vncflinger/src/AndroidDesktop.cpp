@@ -193,11 +193,11 @@ status_t AndroidDesktop::updateDisplayInfo(bool force) {
 
         mLayerId = 0; // internal display constant id
     } else {
-        mDisplayMode = ui::Size(width, height);
-        mDisplayState = rotation == 270 ? ui::ROTATION_270 : (rotation == 180 ? ui::ROTATION_180 : (rotation == 90 ? ui::ROTATION_90 : ui::ROTATION_0));
+        mDisplayMode = ui::Size(_width, _height);
+        mDisplayState = _rotation == 270 ? ui::ROTATION_270 : (_rotation == 180 ? ui::ROTATION_180 : (_rotation == 90 ? ui::ROTATION_90 : ui::ROTATION_0));
     }
 
-    ALOGV("updateDisplayInfo: [%d:%d], rotated %d", mDisplayMode.width, mDisplayMode.height, mDisplayState);
+    ALOGV("updateDisplayInfo: [%d:%d], rotated %d, layerId %d", mDisplayMode.width, mDisplayMode.height, mDisplayState, mLayerId);
 	mPixels->setDisplayInfo(&mDisplayMode, &mDisplayState, force);
     return NO_ERROR;
 }
@@ -220,7 +220,7 @@ void AndroidDesktop::onBufferDimensionsChanged(uint32_t width, uint32_t height) 
 
     mDisplayRect = mVirtualDisplay->getDisplayRect();
 
-    mInputDevice->reconfigure(mDisplayMode.width, mDisplayMode.height);
+    mInputDevice->reconfigure(mDisplayMode.width, mDisplayMode.height, touch, relative);
 
     mServer->setPixelBuffer(mPixels.get(), computeScreenLayout());
     mServer->setScreenLayout(computeScreenLayout());

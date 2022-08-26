@@ -1,5 +1,5 @@
-Various things that need done:
-
+Various things that need to be done:
+MainActivity.java:38
 Copy/paste
 Sound
-Unhardcode display id (load from prop)
+VirtualDisplay.cpp:56

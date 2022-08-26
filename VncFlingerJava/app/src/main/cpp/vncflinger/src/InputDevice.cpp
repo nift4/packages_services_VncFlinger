@@ -328,34 +328,19 @@ static symbolKeysymToDirectKey_t symbolKeysymToDirectKey[] = {
 static const int qwerty[] = {30, 48, 46, 32, 18, 33, 34, 35, 23, 36, 37, 38, 50,
                              49, 24, 25, 16, 19, 31, 20, 22, 47, 17, 45, 21, 44};
 
-status_t InputDevice::start_async(uint32_t width, uint32_t height) {
+status_t InputDevice::start_async(uint32_t width, uint32_t height, bool istouch, bool relative) {
     // don't block the caller since this can take a few seconds
-    std::async(&InputDevice::start, this, width, height);
+    std::async(&InputDevice::start, this, width, height, istouch, relative);
 
     return NO_ERROR;
 }
 
-status_t InputDevice::start(uint32_t width, uint32_t height) {
+status_t InputDevice::start(uint32_t width, uint32_t height, bool istouch, bool relative) {
     Mutex::Autolock _l(mLock);
 
     mLeftClicked = mMiddleClicked = mRightClicked = false;
     mLastX = mLastY = 0;
-
-    char touchStr[92];
-    char useRelativeInputStr[92];
-    if (!__system_property_get("sys.vnc.touch", touchStr)) {
-        touch = false;
-    } else {
-        touch = std::stoi(touchStr) == 1;
-    }
-    if (!__system_property_get("sys.vnc.relative_input", useRelativeInputStr)) {
-        useRelativeInput = false;
-    } else {
-        useRelativeInput = std::stoi(useRelativeInputStr) == 1;
-    }
-    if (touch) {
-        useRelativeInput = false;
-    }
+	touch = istouch; useRelativeInput = relative;
 
     struct input_id id = {
         BUS_VIRTUAL, /* Bus type */
@@ -431,9 +416,9 @@ err_ioctl:
     return NO_INIT;
 }
 
-status_t InputDevice::reconfigure(uint32_t width, uint32_t height) {
+status_t InputDevice::reconfigure(uint32_t width, uint32_t height, bool istouch, bool relative) {
     stop();
-    return start_async(width, height);
+    return start_async(width, height, istouch, relative);
 }
 
 status_t InputDevice::stop() {

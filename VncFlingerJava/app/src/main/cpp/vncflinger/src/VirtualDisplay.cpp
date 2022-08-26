@@ -52,17 +52,17 @@ VirtualDisplay::VirtualDisplay(ui::Size* mode, ui::Rotation* state,
 
     mCpuConsumer->setFrameAvailableListener(listener);
 
-	/*
-    mDisplayToken = SurfaceComposerClient::createDisplay(String8("VNC-VirtualDisplay"), true);
+	if (mLayerId >= 0) {
+		mDisplayToken = SurfaceComposerClient::createDisplay(String8("VNC-VirtualDisplay"), false); //TODO: figure out why sf doesnt let us use secure display, we are system
 
-    SurfaceComposerClient::Transaction t;
-    t.setDisplaySurface(mDisplayToken, mProducer);
-    t.setDisplayProjection(mDisplayToken, *state, mSourceRect, displayRect);
-    t.setDisplayLayerStack(mDisplayToken, mLayerId);
-    t.apply();
-	*/
+		SurfaceComposerClient::Transaction t;
+		t.setDisplaySurface(mDisplayToken, mProducer);
+		t.setDisplayProjection(mDisplayToken, *state, mSourceRect, displayRect);
+		t.setDisplayLayerStack(mDisplayToken, mLayerId);
+		t.apply();
+	}
 
-    ALOGV("Virtual display (%ux%u [viewport=%ux%u] created", width, height, displayRect.getWidth(),
+    ALOGV("Virtual display %d (%ux%u [viewport=%ux%u]) created", mLayerId, width, height, displayRect.getWidth(),
           displayRect.getHeight());
 }
 

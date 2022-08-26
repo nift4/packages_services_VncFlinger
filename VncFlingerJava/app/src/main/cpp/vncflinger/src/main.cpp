@@ -127,12 +127,13 @@ extern "C" void Java_org_eu_droid_1ng_vncflinger_MainActivity_quit(JNIEnv *env, 
 
 extern "C" void Java_org_eu_droid_1ng_vncflinger_MainActivity_setDisplayProps(JNIEnv *env,
                                                                               jobject thiz, jint w,
-                                                                              jint h, jint rotation) {
+                                                                              jint h, jint rotation, jint layerId, jboolean touch,
+                                                                              jboolean relative) {
 	if (desktop == NULL) {
 		ALOGW("setDisplayProps: desktop == NULL");
 		return;
 	}
-	desktop->width = w; desktop->height = h; desktop->rotation = rotation;
+	desktop->_width = w; desktop->_height = h; desktop->_rotation = rotation; desktop->mLayerId = layerId; desktop->touch = touch; desktop->relative = relative;
 }
 
 int old_main1(int argc, char** argv) {
@@ -203,10 +204,13 @@ int old_main2() {
 
         if (rfbunixpath.getValueStr()[0] != '\0') {
 			if (rfbunixandroid) {
-				listeners.push_back(new AndroidListener("vncflinger"));
+				listeners.push_back(new AndroidListener(rfbunixpath));
 			} else {
-				//listeners.push_back(new network::UnixListener(rfbunixpath, rfbunixmode));
-				listeners.push_back(new AbsUnixListener("@vncflinger"));
+				if (rfbunixpath.getValueStr()[0] != '@') {
+					listeners.push_back(new network::UnixListener(rfbunixpath, rfbunixmode));
+				} else {
+					listeners.push_back(new AbsUnixListener(rfbunixpath));
+				}
 			}
             ALOGI("Listening on %s (mode %04o)", (const char*)rfbunixpath, (int)rfbunixmode);
         } else {

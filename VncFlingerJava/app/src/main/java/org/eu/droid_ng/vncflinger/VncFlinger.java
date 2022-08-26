@@ -79,7 +79,7 @@ public class VncFlinger extends Service {
 						.setSmallIcon(R.drawable.ic_desktop)
 						.build();
 		startForeground(ONGOING_NOTIFICATION_ID, notification);
-		return START_REDELIVER_INTENT;
+		return START_NOT_STICKY;
 	}
 
 	@Override

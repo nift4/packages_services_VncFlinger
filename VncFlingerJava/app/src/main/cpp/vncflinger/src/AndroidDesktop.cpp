@@ -110,6 +110,8 @@ void AndroidDesktop::notify() {
 // called when a client resizes the window
 unsigned int AndroidDesktop::setScreenLayout(int reqWidth, int reqHeight,
                                              const rfb::ScreenSet& layout) {
+	if (mLayerId != 0) return rfb::resultInvalid; // not supported on devices other than internal display, let vncviewer handle the problem :)
+
     Mutex::Autolock _l(mLock);
 
     char* dbg = new char[1024];

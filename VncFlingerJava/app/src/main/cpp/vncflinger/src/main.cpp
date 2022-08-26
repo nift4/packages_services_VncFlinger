@@ -102,8 +102,8 @@ extern "C" jobject Java_org_eu_droid_1ng_vncflinger_MainActivity_getSurface(JNIE
 		return NULL;
 	}
 	ANativeWindow* w = new Surface(desktop->mVirtualDisplay->getProducer(), true);
-	Rect dr = desktop->mVirtualDisplay->getDisplayRect();
-	//TODO: scale buffer to dr
+	//Rect dr = desktop->mVirtualDisplay->getDisplayRect();
+	//if we want to bring back window resizing without display resize, we need to scale buffer to dr
 	if (w == NULL) {
 		ALOGE("getSurface: w == NULL");
 		return NULL;

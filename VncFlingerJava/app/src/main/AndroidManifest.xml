@@ -15,6 +15,7 @@
 		tools:ignore="ProtectedPermissions" />
 	<uses-permission android:name="android.permission.INTERNET" />
 	<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+	<uses-permission android:name="android.permission.READ_CLIPBOARD_IN_BACKGROUND" />
 
 	<application
 		android:label="@string/app_name"

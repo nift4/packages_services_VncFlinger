@@ -22,6 +22,8 @@ using namespace vncflinger;
 using namespace android;
 //main.cpp
 extern void runJniCallback();
+extern void runJniCallbackSetClipboard(const char* text);
+extern const char* getJniCallbackGetClipboard();
 
 AndroidDesktop::AndroidDesktop() {
     mDisplayRect = Rect(0, 0);
@@ -69,6 +71,23 @@ void AndroidDesktop::stop() {
     mInputDevice->stop();
 
     runJniCallback();
+}
+
+void AndroidDesktop::handleClipboardRequest() {
+    const char* data = getJniCallbackGetClipboard();
+    if (strlen(data)) mServer->sendClipboardData(data);
+}
+
+void AndroidDesktop::handleClipboardAnnounce(bool available) {
+    if (available) mServer->requestClipboard();
+}
+
+void AndroidDesktop::handleClipboardData(const char* data) {
+    runJniCallbackSetClipboard(data);
+}
+
+void AndroidDesktop::notifyClipboardChanged() {
+    if (mServer) mServer->announceClipboard(true);
 }
 
 void AndroidDesktop::processFrames() {

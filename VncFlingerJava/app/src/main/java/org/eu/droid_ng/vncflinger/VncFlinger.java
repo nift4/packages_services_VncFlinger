@@ -1,5 +1,6 @@
 package org.eu.droid_ng.vncflinger;
 
+import static android.content.ClipDescription.MIMETYPE_TEXT_PLAIN;
 import static android.hardware.display.DisplayManager.*;
 
 import android.annotation.SuppressLint;
@@ -7,6 +8,9 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.content.Intent;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
@@ -24,6 +28,7 @@ public class VncFlinger extends Service {
 	public final String CHANNEL_ID = "services";
 
 	public VirtualDisplay display;
+	public ClipboardManager mClipboard;
 	public boolean isInternal;
 	public boolean touch;
 	public boolean relative;
@@ -53,6 +58,15 @@ public class VncFlinger extends Service {
 			display = ((DisplayManager)getSystemService(DISPLAY_SERVICE))
 					.createVirtualDisplay("VNC", w, h, dpi, null,
 							VIRTUAL_DISPLAY_FLAG_SECURE | VIRTUAL_DISPLAY_FLAG_PUBLIC | VIRTUAL_DISPLAY_FLAG_TRUSTED | VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH | VIRTUAL_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS);
+		mClipboard = (ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
+		mClipboard.addPrimaryClipChangedListener(new ClipboardManager.OnPrimaryClipChangedListener() {
+			@Override
+			public void onPrimaryClipChanged() {
+				if (mClipboard.hasPrimaryClip() && mClipboard.getPrimaryClipDescription().hasMimeType(MIMETYPE_TEXT_PLAIN)) {
+					notifyServerClipboardChanged();
+				}
+			}
+		});
 
 		new Thread(this::workerThread).start();
 
@@ -125,9 +139,26 @@ public class VncFlinger extends Service {
 		display.setSurface(s);
 	}
 
+	private void setServerClipboard(String text) {
+		ClipData clip = ClipData.newPlainText("VNCFlinger", text);
+		mClipboard.setPrimaryClip(clip);
+	}
+
+	private String getServerClipboard() {
+		String text = "";
+		if (mClipboard.hasPrimaryClip() && mClipboard.getPrimaryClipDescription().hasMimeType(MIMETYPE_TEXT_PLAIN)) {
+			ClipData clipData = mClipboard.getPrimaryClip();
+			ClipData.Item item = clipData.getItemAt(0);
+			text = item.getText().toString();
+		}
+
+		return text;
+	}
+
 	private native int initializeVncFlinger(String[] commandLineArgs);
 	private native void setDisplayProps(int w, int h, int rotation, int layerId, boolean touch, boolean relative);
 	private native int mainLoop();
 	private native void quit();
 	private native Surface getSurface();
+	private native void notifyServerClipboardChanged();
 }

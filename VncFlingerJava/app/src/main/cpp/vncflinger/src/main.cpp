@@ -48,6 +48,8 @@ static sp<AndroidDesktop> desktop = NULL;
 static JNIEnv* gEnv;
 static jobject gThiz;
 static jmethodID gMethod;
+static jmethodID gMethodSetClipboard;
+static jmethodID gMethodGetClipboard;
 
 static void printVersion(FILE* fp) {
     fprintf(fp, "VNCFlinger 1.0");
@@ -67,6 +69,21 @@ void runJniCallback() {
 	gEnv->CallVoidMethod(gThiz, gMethod);
 }
 
+void runJniCallbackSetClipboard(const char* text) {
+    jstring jtext = gEnv->NewStringUTF(text);
+    gEnv->CallVoidMethod(gThiz, gMethodSetClipboard, jtext);
+    gEnv->DeleteLocalRef(jtext);
+}
+
+const char* getJniCallbackGetClipboard() {
+    jstring jtext = (jstring)gEnv->CallObjectMethod(gThiz, gMethodGetClipboard);
+    const char* text = gEnv->GetStringUTFChars(jtext, NULL);
+    const char* result = text;
+    gEnv->ReleaseStringUTFChars(jtext, text);
+    gEnv->DeleteLocalRef(jtext);
+    return result;
+}
+
 int old_main1(int argc, char** argv);
 int old_main2();
 
@@ -83,6 +100,8 @@ extern "C" jint Java_org_eu_droid_1ng_vncflinger_VncFlinger_initializeVncFlinger
 	}
 	gThiz = thiz; gEnv = env;
 	gMethod = env->GetMethodID(env->GetObjectClass(thiz), "callback", "()V");
+    gMethodSetClipboard = env->GetMethodID(env->GetObjectClass(thiz), "setServerClipboard", "(Ljava/lang/String;)V");
+    gMethodGetClipboard = env->GetMethodID(env->GetObjectClass(thiz), "getServerClipboard", "()Ljava/lang/String;");
 	return old_main1(argc, argv);
 }
 
@@ -134,6 +153,15 @@ extern "C" void Java_org_eu_droid_1ng_vncflinger_VncFlinger_setDisplayProps(JNIE
 		return;
 	}
 	desktop->_width = w; desktop->_height = h; desktop->_rotation = rotation; desktop->mLayerId = layerId; desktop->touch = touch; desktop->relative = relative;
+}
+
+extern "C" void Java_org_eu_droid_1ng_vncflinger_VncFlinger_notifyServerClipboardChanged(
+    JNIEnv* env, jobject thiz) {
+    if (desktop == NULL) {
+        ALOGW("notifyClipboardChanged: desktop == NULL");
+        return;
+    }
+    desktop->notifyClipboardChanged();
 }
 
 int old_main1(int argc, char** argv) {

@@ -36,6 +36,10 @@ class AndroidDesktop : public rfb::SDesktop,
     virtual void start(rfb::VNCServer* vs);
     virtual void stop();
     virtual void terminate();
+    virtual void handleClipboardRequest();
+    virtual void handleClipboardAnnounce(bool available);
+    virtual void handleClipboardData(const char* data);
+    virtual void notifyClipboardChanged();
 
     virtual unsigned int setScreenLayout(int fb_width, int fb_height, const rfb::ScreenSet& layout);
 

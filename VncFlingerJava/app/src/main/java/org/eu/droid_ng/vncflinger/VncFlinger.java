@@ -3,19 +3,25 @@ package org.eu.droid_ng.vncflinger;
 import static android.hardware.display.DisplayManager.*;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.Service;
+import android.content.Intent;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 //import android.hardware.input.InputManagerInternal;
-import android.os.Bundle;
+import android.os.IBinder;
 import android.util.Log;
 import android.view.Surface;
 
-public class MainActivity extends Activity {
+public class VncFlinger extends Service {
 
 	static {
 		System.loadLibrary("jni_vncflinger");
 	}
+	public final int ONGOING_NOTIFICATION_ID = 5;
+	public final String CHANNEL_ID = "services";
 
 	public VirtualDisplay display;
 	public boolean isInternal;
@@ -25,33 +31,67 @@ public class MainActivity extends Activity {
 	public int h;
 	public int dpi;
 	public String[] args;
-	public static boolean didInit = false;
 
 	@SuppressLint("ServiceCast")
 	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		if (didInit) return;
-		didInit = true;
-		setContentView(R.layout.activity_main);
+	public int onStartCommand(Intent intent, int flags, int startId) {
+		super.onStartCommand(intent, flags, startId);
 
-		w = 1280; h = 720; dpi = 220; touch = false; relative = false; isInternal = false; //TODO: move activity -> service and then get from intent
+		w = intent.getIntExtra("width", -1);
+		h = intent.getIntExtra("height", -1);
+		dpi = intent.getIntExtra("dpi", -1);
+		touch = intent.getBooleanExtra("touch", false);
+		relative = intent.getBooleanExtra("useRelativeInput", false);
+		isInternal = intent.getBooleanExtra("isInternal", false);
+		if ((w < 0 || h < 0 || dpi < 0) && !isInternal) {
+			throw new IllegalStateException("invalid extras");
+		}
+
 		args = new String[] { "vncflinger", "-rfbunixandroid", "0", "-rfbunixpath", "@vncflinger", "-SecurityTypes", "None" };
 
-		if (!isInternal) display = ((DisplayManager)getSystemService(DISPLAY_SERVICE)).createVirtualDisplay("VNC", w, h, dpi, null, VIRTUAL_DISPLAY_FLAG_SECURE | VIRTUAL_DISPLAY_FLAG_PUBLIC | VIRTUAL_DISPLAY_FLAG_TRUSTED | VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH | VIRTUAL_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS);
+		if (!isInternal)
+			display = ((DisplayManager)getSystemService(DISPLAY_SERVICE))
+					.createVirtualDisplay("VNC", w, h, dpi, null,
+							VIRTUAL_DISPLAY_FLAG_SECURE | VIRTUAL_DISPLAY_FLAG_PUBLIC | VIRTUAL_DISPLAY_FLAG_TRUSTED | VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH | VIRTUAL_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS);
+
 		new Thread(this::workerThread).start();
 
 		//function added in private api 33. revisit when moving to a13 - or ignore if its not neccessary
 		//if (touch) return;
 		//if (!((InputManagerInternal)getSystemService(INPUT_SERVICE)).setVirtualMousePointerDisplayId(display.getDisplay().getDisplayId()))
 		//	Log.w("VNCFlinger:java", "Failed to override pointer displayId");
+
+
+		NotificationManager notificationManager = getSystemService(NotificationManager.class);
+		if (notificationManager.getNotificationChannel(CHANNEL_ID) == null) {
+			CharSequence name = getString(R.string.channel_name);
+			String description = getString(R.string.channel_description);
+			int importance = NotificationManager.IMPORTANCE_LOW;
+			NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
+			channel.setDescription(description);
+			channel.setBlockable(true);
+			notificationManager.createNotificationChannel(channel);
+		}
+		Notification notification =
+				new Notification.Builder(this, CHANNEL_ID)
+						.setContentTitle(getText(R.string.notification_title))
+						.setContentText(getString(R.string.notification_message, getText(R.string.app_name)))
+						.setSmallIcon(R.drawable.ic_desktop)
+						.build();
+		startForeground(ONGOING_NOTIFICATION_ID, notification);
+		return START_REDELIVER_INTENT;
 	}
 
 	@Override
-	protected void onDestroy() {
+	public void onDestroy() {
 		super.onDestroy();
 		quit();
 		if (display != null) display.release();
+	}
+
+	@Override
+	public IBinder onBind(Intent intent) {
+		return null;
 	}
 
 	private void onError(int exitCode) {

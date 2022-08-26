@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<resources>
+	<string name="app_name">VNC services</string>
+	<string name="channel_name">Service notification</string>
+	<string name="channel_description">You may block this notification category.</string>
+	<string name="notification_title">VNC is enabled</string>
+	<string name="notification_message">\"%s\" is currently running</string>
+</resources>

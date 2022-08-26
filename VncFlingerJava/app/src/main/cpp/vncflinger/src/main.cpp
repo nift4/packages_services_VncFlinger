@@ -70,7 +70,7 @@ void runJniCallback() {
 int old_main1(int argc, char** argv);
 int old_main2();
 
-extern "C" jint Java_org_eu_droid_1ng_vncflinger_MainActivity_initializeVncFlinger(JNIEnv *env,
+extern "C" jint Java_org_eu_droid_1ng_vncflinger_VncFlinger_initializeVncFlinger(JNIEnv *env,
                                                                                    jobject thiz,
 																				   jobjectArray command_line_args) {
 	const int argc = env->GetArrayLength(command_line_args);
@@ -86,7 +86,7 @@ extern "C" jint Java_org_eu_droid_1ng_vncflinger_MainActivity_initializeVncFling
 	return old_main1(argc, argv);
 }
 
-extern "C" jobject Java_org_eu_droid_1ng_vncflinger_MainActivity_getSurface(JNIEnv * env,
+extern "C" jobject Java_org_eu_droid_1ng_vncflinger_VncFlinger_getSurface(JNIEnv * env,
 																			jobject thiz
 ) {
 	if (desktop == NULL) {
@@ -115,17 +115,17 @@ extern "C" jobject Java_org_eu_droid_1ng_vncflinger_MainActivity_getSurface(JNIE
 	return a;
 }
 
-extern "C" jint Java_org_eu_droid_1ng_vncflinger_MainActivity_mainLoop(JNIEnv * env,
+extern "C" jint Java_org_eu_droid_1ng_vncflinger_VncFlinger_mainLoop(JNIEnv * env,
                                                                        jobject thiz
 ) {
 	return old_main2();
 }
 
-extern "C" void Java_org_eu_droid_1ng_vncflinger_MainActivity_quit(JNIEnv *env, jobject thiz) {
+extern "C" void Java_org_eu_droid_1ng_vncflinger_VncFlinger_quit(JNIEnv *env, jobject thiz) {
 	gCaughtSignal = true;
 }
 
-extern "C" void Java_org_eu_droid_1ng_vncflinger_MainActivity_setDisplayProps(JNIEnv *env,
+extern "C" void Java_org_eu_droid_1ng_vncflinger_VncFlinger_setDisplayProps(JNIEnv *env,
                                                                               jobject thiz, jint w,
                                                                               jint h, jint rotation, jint layerId, jboolean touch,
                                                                               jboolean relative) {

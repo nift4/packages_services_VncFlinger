@@ -35,7 +35,7 @@ public class MainActivity extends Activity {
 		didInit = true;
 		setContentView(R.layout.activity_main);
 
-		w = 1280; h = 720; dpi = 220; touch = false; relative = false; isInternal = true; //TODO: move activity -> service and then get from intent
+		w = 1280; h = 720; dpi = 220; touch = false; relative = false; isInternal = false; //TODO: move activity -> service and then get from intent
 		args = new String[] { "vncflinger", "-rfbunixandroid", "0", "-rfbunixpath", "@vncflinger", "-SecurityTypes", "None" };
 
 		if (!isInternal) display = ((DisplayManager)getSystemService(DISPLAY_SERVICE)).createVirtualDisplay("VNC", w, h, dpi, null, VIRTUAL_DISPLAY_FLAG_SECURE | VIRTUAL_DISPLAY_FLAG_PUBLIC | VIRTUAL_DISPLAY_FLAG_TRUSTED | VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH | VIRTUAL_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS);
@@ -51,12 +51,12 @@ public class MainActivity extends Activity {
 	protected void onDestroy() {
 		super.onDestroy();
 		quit();
-		display.release();
+		if (display != null) display.release();
 	}
 
 	private void onError(int exitCode) {
 		quit();
-		display.release();
+		if (display != null) display.release();
 		throw new IllegalStateException("VNCFlinger died, exit code " + exitCode);
 	}
 

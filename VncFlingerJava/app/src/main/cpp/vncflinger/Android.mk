@@ -34,7 +34,7 @@ LOCAL_STATIC_LIBRARIES += \
 LOCAL_CFLAGS := -DVNCFLINGER_VERSION="1.0"
 LOCAL_CFLAGS += -Ofast -Werror -fexceptions -Wno-implicit-fallthrough -Wno-unused-parameter
 
-LOCAL_CFLAGS += -DLOG_NDEBUG=0
+#LOCAL_CFLAGS += -DLOG_NDEBUG=0
 
 LOCAL_MODULE := libjni_vncflinger
 

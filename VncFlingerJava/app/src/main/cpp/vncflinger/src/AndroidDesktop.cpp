@@ -67,6 +67,8 @@ void AndroidDesktop::stop() {
     mVirtualDisplay.clear();
     mPixels.clear();
     mInputDevice->stop();
+
+    runJniCallback();
 }
 
 void AndroidDesktop::processFrames() {

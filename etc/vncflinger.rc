@@ -1,0 +1,3 @@
+on boot
+    # vnc
+    chmod 0666 /dev/uinput

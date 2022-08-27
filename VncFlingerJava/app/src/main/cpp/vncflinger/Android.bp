@@ -39,4 +39,5 @@ cc_library {
     local_include_dirs: [
         "src",
     ],
+    system_ext_specific: true,
 }

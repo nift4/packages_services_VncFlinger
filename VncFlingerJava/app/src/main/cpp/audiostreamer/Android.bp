@@ -38,4 +38,5 @@ cc_library {
         "libmedia_headers",
         "libmediametrics_headers",
     ],
+    system_ext_specific: true,
 }

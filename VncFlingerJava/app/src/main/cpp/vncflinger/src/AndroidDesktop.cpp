@@ -76,6 +76,7 @@ void AndroidDesktop::stop() {
 void AndroidDesktop::handleClipboardRequest() {
     const char* data = getJniCallbackGetClipboard();
     if (strlen(data)) mServer->sendClipboardData(data);
+    free((void*)data);
 }
 
 void AndroidDesktop::handleClipboardAnnounce(bool available) {
@@ -213,9 +214,12 @@ status_t AndroidDesktop::updateDisplayInfo(bool force) {
         mDisplayState = tempDisplayState.orientation;
 
         mLayerId = 0; // internal display constant id
-    } else {
+    } else if (_width > 0 && _height > 0 && _rotation > -1) {
         mDisplayMode = ui::Size(_width, _height);
         mDisplayState = _rotation == 270 ? ui::ROTATION_270 : (_rotation == 180 ? ui::ROTATION_180 : (_rotation == 90 ? ui::ROTATION_90 : ui::ROTATION_0));
+    } else {
+        ALOGE("Invalid rect");
+        return -1;
     }
 
     ALOGV("updateDisplayInfo: [%d:%d], rotated %d, layerId %d", mDisplayMode.width, mDisplayMode.height, mDisplayState, mLayerId);

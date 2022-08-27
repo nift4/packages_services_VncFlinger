@@ -78,7 +78,7 @@ void runJniCallbackSetClipboard(const char* text) {
 const char* getJniCallbackGetClipboard() {
     jstring jtext = (jstring)gEnv->CallObjectMethod(gThiz, gMethodGetClipboard);
     const char* text = gEnv->GetStringUTFChars(jtext, NULL);
-    const char* result = text;
+    char* result = strdup(text);
     gEnv->ReleaseStringUTFChars(jtext, text);
     gEnv->DeleteLocalRef(jtext);
     return result;
@@ -97,7 +97,9 @@ extern "C" jint Java_org_eu_droid_1ng_vncflinger_VncFlinger_initializeVncFlinger
 		const char *cmdline_temp = env->GetStringUTFChars(o, NULL);
 		argv[i] = strdup(cmdline_temp);
 		env->ReleaseStringUTFChars(o, cmdline_temp);
+		env->DeleteLocalRef(o);
 	}
+	env->DeleteLocalRef(command_line_args);
 	gThiz = thiz; gEnv = env;
 	gMethod = env->GetMethodID(env->GetObjectClass(thiz), "callback", "()V");
     gMethodSetClipboard = env->GetMethodID(env->GetObjectClass(thiz), "setServerClipboard", "(Ljava/lang/String;)V");
@@ -203,6 +205,8 @@ int old_main1(int argc, char** argv) {
 			}
 			return 2;
 		}
+
+		free(argv[i]);
 
 		ALOGE("Invalid input. i=%d", i);
 		return 5;
@@ -354,6 +358,12 @@ int old_main2() {
     }
 	desktop = NULL;
     ALOGI("Bye - cleaning up");
+	gEnv = NULL;
+	gThiz = NULL;
+	gSerialNo[0] = '\0';
+	for (std::list<network::SocketListener*>::iterator i = listeners.begin();
+	     i != listeners.end(); i++)
+		delete (*i);
     if (mPidFile.length() != 0) {
         remove(mPidFile.c_str());
     }

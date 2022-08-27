@@ -59,12 +59,9 @@ public class VncFlinger extends Service {
 					.createVirtualDisplay("VNC", w, h, dpi, null,
 							VIRTUAL_DISPLAY_FLAG_SECURE | VIRTUAL_DISPLAY_FLAG_PUBLIC | VIRTUAL_DISPLAY_FLAG_TRUSTED | VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH | VIRTUAL_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS);
 		mClipboard = (ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
-		mClipboard.addPrimaryClipChangedListener(new ClipboardManager.OnPrimaryClipChangedListener() {
-			@Override
-			public void onPrimaryClipChanged() {
-				if (mClipboard.hasPrimaryClip() && mClipboard.getPrimaryClipDescription().hasMimeType(MIMETYPE_TEXT_PLAIN)) {
-					notifyServerClipboardChanged();
-				}
+		mClipboard.addPrimaryClipChangedListener(() -> {
+			if (mClipboard.hasPrimaryClip() && mClipboard.getPrimaryClipDescription().hasMimeType(MIMETYPE_TEXT_PLAIN)) {
+				notifyServerClipboardChanged();
 			}
 		});
 
@@ -136,7 +133,11 @@ public class VncFlinger extends Service {
 		Surface s = getSurface();
 		if (s == null)
 			Log.i("VNCFlinger", "new surface is null");
-		display.setSurface(s);
+		try {
+			display.setSurface(s);
+		} catch (NullPointerException unused) {
+			Log.w("VNCFlinger", "Failed to set new surface");
+		}
 	}
 
 	private void setServerClipboard(String text) {
@@ -148,8 +149,13 @@ public class VncFlinger extends Service {
 		String text = "";
 		if (mClipboard.hasPrimaryClip() && mClipboard.getPrimaryClipDescription().hasMimeType(MIMETYPE_TEXT_PLAIN)) {
 			ClipData clipData = mClipboard.getPrimaryClip();
+			int i = 0;
+			while (!MIMETYPE_TEXT_PLAIN.equals(mClipboard.getPrimaryClipDescription().getMimeType(i)))
+				i++;
 			ClipData.Item item = clipData.getItemAt(0);
 			text = item.getText().toString();
+		} else if (mClipboard.hasPrimaryClip()) {
+			Log.w("VNCFlinger:Clipboard", "cannot paste :(");
 		}
 
 		return text;

@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/un.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -56,14 +57,52 @@ int createUnixSocket(const char *name) {
     bool success = false;
     int sock = 0;
     do {
-        sock = android_get_control_socket(name);
+        struct sockaddr_un addr;
+
+        sock = socket(AF_UNIX, SOCK_STREAM, 0);
         if (sock <= 0) {
             ALOGI("createUnixSocket socket failed: %d\n", errno);
             break;
         }
 
+        memset(&addr, 0, sizeof(addr));
+        addr.sun_family = AF_UNIX;
+        strcpy(addr.sun_path, name);
+        addr.sun_path[0] = '\0';
+        if (bind(sock, (struct sockaddr *)&addr, sizeof(sa_family_t) + strlen(name) * sizeof(char)) < 0) {
+            close(sock);
+            ALOGI("createUnixSocket socket bind: %d\n", errno);
+            break;
+        }
+
         if (listen(sock, 1) != 0) {
             ALOGI("createUnixSocket socket listen: %d\n", errno);
+            break;
+        }
+
+        success = true;
+    } while (0);
+
+    if (!success && sock > 0) {
+        close(sock);
+        sock = 0;
+    }
+
+    return sock;
+}
+
+int createAndroidSocket(const char *name) {
+    bool success = false;
+    int sock = 0;
+    do {
+        sock = android_get_control_socket(name);
+        if (sock <= 0) {
+            ALOGI("createAndroidSocket socket failed: %d\n", errno);
+            break;
+        }
+
+        if (listen(sock, 1) != 0) {
+            ALOGI("createAndroidSocket socket listen: %d\n", errno);
             break;
         }
 

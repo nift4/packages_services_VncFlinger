@@ -1,0 +1,5 @@
+<permissions>
+    <privapp-permissions package="org.eu.droid_ng.vncflinger">
+        <permission name="android.permission.CAPTURE_AUDIO_OUTPUT"/>
+    </privapp-permissions>
+</permissions>

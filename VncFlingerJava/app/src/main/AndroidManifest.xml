@@ -15,7 +15,11 @@
 		tools:ignore="ProtectedPermissions" />
 	<uses-permission android:name="android.permission.INTERNET" />
 	<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-	<uses-permission android:name="android.permission.READ_CLIPBOARD_IN_BACKGROUND" />
+	<uses-permission android:name="android.permission.READ_CLIPBOARD_IN_BACKGROUND"
+		tools:ignore="ProtectedPermissions" />
+	<uses-permission android:name="android.permission.RECORD_AUDIO" />
+	<uses-permission android:name="android.permission.CAPTURE_AUDIO_OUTPUT"
+		tools:ignore="ProtectedPermissions" />
 
 	<application
 		android:label="@string/app_name"

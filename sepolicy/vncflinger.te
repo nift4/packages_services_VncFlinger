@@ -34,3 +34,7 @@ allow vncflinger rootfs:lnk_file getattr;
 
 # gpu access (needed on rk)
 allow vncflinger gpu_device:chr_file { ioctl open read write };
+
+# audio
+allow vncflinger audioserver_service:service_manager find;
+allow vncflinger mediametrics_service:service_manager find;

@@ -27,6 +27,7 @@
 #include <sys/select.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <jni.h>
 
 using namespace android;
 
@@ -37,7 +38,10 @@ using namespace android;
 
 static char *gProgramName;
 static int gSocketTCPPort = DEFAULT_SOCKET_TCP_PORT;
+static bool gUsingSocketAndroid = false;
 static bool gUsingSocketUnix = false;
+static bool gRunning = false;
+static char *gSocketName;
 sp<AudioRecord> pAudioRecord = NULL;
 
 uint32_t sampleRate = 48000;
@@ -52,7 +56,7 @@ static int audiostreamer_init() {
     ALOGI("%s: sampleRate: %d, channel: %d framecount: %d", __FUNCTION__, sampleRate, channel, (int)framecount);
 
     AttributionSourceState attributionSource;
-    attributionSource.packageName = "audiostreamer";
+    attributionSource.packageName = "org.eu.droid_ng.vncflinger";
     attributionSource.token = sp<BBinder>::make();
 
     pAudioRecord = new AudioRecord(AUDIO_SOURCE_REMOTE_SUBMIX, sampleRate, AUDIO_FORMAT_PCM_16_BIT,
@@ -71,7 +75,7 @@ static int audiostreamer_init() {
     return 0;
 }
 
-void *audiostreamer_record_thread(void *arg) {
+void audiostreamer_record_thread(void *arg) {
     int err = 0;
     char *pReadBuf = NULL;
     int iReadLen = 0;
@@ -82,25 +86,25 @@ void *audiostreamer_record_thread(void *arg) {
         ALOGI("%s: nSock:%d", __FUNCTION__, nSock);
     } else {
         ALOGI("%s: NULL==arg, return.", __FUNCTION__);
-        return NULL;
+        return;
     }
 
     if (pAudioRecord == NULL) {
         err = audiostreamer_init();
         if (err != 0) {
             ALOGE("%s: create AudioRecord failed", __FUNCTION__);
-            return NULL;
+            return;
         }
     }
 
     pReadBuf = (char *) malloc(READ_AUDIO_MAX);
     if (pReadBuf == NULL) {
         ALOGE("%s: Failed to allocate memory", __FUNCTION__);
-        return NULL;
+        return;
     }
 
     pAudioRecord->start();
-    while (1) {
+    while (gRunning) {
         memset(pReadBuf, 0, READ_AUDIO_MAX);
 
         iReadLen = pAudioRecord->read(pReadBuf, kBufferOutputSize);
@@ -109,10 +113,10 @@ void *audiostreamer_record_thread(void *arg) {
             continue;
         }
 
-        sendDataSocket(nSock, pReadBuf, iReadLen, 0);
+        if (!sendDataSocket(nSock, pReadBuf, iReadLen, 0)) break;
     }
 
-    if (pAudioRecord != NULL) {
+    if (pAudioRecord != NULL && !gRunning) {
         ALOGI("%s: pAudioRecord->stop", __FUNCTION__);
         pAudioRecord->stop();
         if (pAudioRecord->stopped()) {
@@ -124,63 +128,53 @@ void *audiostreamer_record_thread(void *arg) {
         free(pReadBuf);
 
     closeSocket(nSock);
-    return NULL;
 }
 
-void *audiostreamer_create_thread(void *) {
-    int err = 0;
+void audiostreamer_create_thread() {
     int sock = 0;
     int sock_n = 0;
 
-    pthread_t tid_audio_record;
-    memset(&tid_audio_record, 0, sizeof(pthread_t));
-
-    pthread_detach(pthread_self());
-
-    if (gUsingSocketUnix)
-        sock = createUnixSocket(DEFAULT_SOCKET_UNIX_NAME);
+    if (gUsingSocketAndroid)
+        sock = createAndroidSocket(DEFAULT_SOCKET_UNIX_NAME);
+    else if (gUsingSocketUnix)
+        sock = createUnixSocket(gSocketName);
     else
         sock = createTCPSocket(gSocketTCPPort);
     if (sock <= 0) {
         ALOGI("%s: Create socket failed!", __FUNCTION__);
-        return NULL;
+        return;
     }
 
-    sock_n = acceptSocket(sock);
-    if (sock_n > 0) {
-        err = pthread_create(&tid_audio_record, NULL, audiostreamer_record_thread, &sock_n);
-        if (err != 0)
-            ALOGE("Failed to create recorder thread");
+    // NO multitasking on PURPOSE
+    while (gRunning) {
+        sock_n = acceptSocket(sock);
+        if (sock_n > 0) {
+            audiostreamer_record_thread(&sock_n);
+        }
     }
-
-    if (tid_audio_record)
-        pthread_join(tid_audio_record, NULL);
-
-    pthread_exit(0);
-
-    return NULL;
 }
 
-static void usage() {
-    fprintf(stderr, "\nUsage: %s [-T <Port>] or [<-U>]\n", gProgramName);
+static int usage() {
+    fprintf(stderr, "\nUsage: %s [-T <Port>] or [<-U>] or [-u <Name>]\n", gProgramName);
     fprintf(stderr,
             "\n"
             "-T: TCP socket (default port: %d)\n"
-            "-U: Unix socket with name: %s\n",
-            DEFAULT_SOCKET_TCP_PORT, DEFAULT_SOCKET_UNIX_NAME);
-    exit(1);
+            "-U: Android control unix socket with name: %s\n"
+            "-u: Unix socket (default: %s)\n",
+            DEFAULT_SOCKET_TCP_PORT, DEFAULT_SOCKET_UNIX_NAME, "@" DEFAULT_SOCKET_UNIX_NAME);
+    return 1;
 }
 
-int main(int argc, char **argv) {
+int audio_main(int argc, char **argv) {
+    gRunning = true;
     gProgramName = argv[0];
-    pthread_t tid_audio_srv = 0;
     int i = 1;
 
     if (argc < 2)
-        usage();
+        return usage();
     while (i < argc) {
         if (strcmp(argv[i], "-T") == 0) {
-            gUsingSocketUnix = false;
+            gUsingSocketAndroid = false;
             i++;
             if (i < argc) {
                 gSocketTCPPort = atoi(argv[i]);
@@ -189,21 +183,50 @@ int main(int argc, char **argv) {
                 gSocketTCPPort = DEFAULT_SOCKET_TCP_PORT;
             }
         } else if (strcmp(argv[i], "-U") == 0) {
-            gUsingSocketUnix = true;
+            gUsingSocketAndroid = true;
             i++;
             if (i < argc)
-                usage();
+                return usage();
+        } else if (strcmp(argv[i], "-u") == 0) {
+            gUsingSocketAndroid = false;
+            gUsingSocketUnix = true;
+            i++;
+            if (i < argc) {
+                gSocketName = strdup(argv[i]);
+                i++;
+            } else {
+                gSocketName = strdup("@" DEFAULT_SOCKET_UNIX_NAME);
+            }
         } else {
-            usage();
+            return usage();
         }
+
+        free(argv[i]);
     }
 
-    int err = pthread_create(&tid_audio_srv, NULL, audiostreamer_create_thread, NULL);
-    if (err != 0)
-        ALOGE("Failed to create thread");
-
-    while (1)
-        sleep(5);
-
+    audiostreamer_create_thread();
     return 0;
+}
+
+
+extern "C" jint Java_org_eu_droid_1ng_vncflinger_VncFlinger_startAudioStreamer(JNIEnv *env,
+                                                                               jobject thiz,
+                                                                               jobjectArray command_line_args) {
+    const int argc = env->GetArrayLength(command_line_args);
+    char* argv[argc];
+    for (int i=0; i<argc; i++) {
+        jstring o = (jstring)(env->GetObjectArrayElement(command_line_args, i));
+        const char *cmdline_temp = env->GetStringUTFChars(o, NULL);
+        argv[i] = strdup(cmdline_temp);
+        env->ReleaseStringUTFChars(o, cmdline_temp);
+        env->DeleteLocalRef(o);
+    }
+    env->DeleteLocalRef(command_line_args);
+
+    return audio_main(argc, argv);
+}
+
+extern "C" void Java_org_eu_droid_1ng_vncflinger_VncFlinger_endAudioStreamer(JNIEnv *env,
+                                                                             jobject thiz) {
+    gRunning = false;
 }

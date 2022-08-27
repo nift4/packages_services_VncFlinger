@@ -23,6 +23,7 @@ public class VncFlinger extends Service {
 
 	static {
 		System.loadLibrary("jni_vncflinger");
+		System.loadLibrary("jni_audiostreamer");
 	}
 	public final int ONGOING_NOTIFICATION_ID = 5;
 	public final String CHANNEL_ID = "services";
@@ -30,6 +31,7 @@ public class VncFlinger extends Service {
 	public VirtualDisplay display;
 	public ClipboardManager mClipboard;
 	public boolean isInternal;
+	public boolean audio;
 	public boolean allowResize;
 	public boolean touch;
 	public boolean relative;
@@ -37,6 +39,7 @@ public class VncFlinger extends Service {
 	public int h;
 	public int dpi;
 	public String[] args;
+	public String[] aargs;
 
 	@SuppressLint("ServiceCast")
 	@Override
@@ -50,11 +53,13 @@ public class VncFlinger extends Service {
 		relative = intent.getBooleanExtra("useRelativeInput", false);
 		isInternal = intent.getBooleanExtra("isInternal", false);
 		allowResize = intent.getBooleanExtra("allowResize", false);
+		audio = intent.getBooleanExtra("audio", true);
 		if ((w < 0 || h < 0 || dpi < 0) && !isInternal) {
 			throw new IllegalStateException("invalid extras");
 		}
 
 		args = new String[] { "vncflinger", "-rfbunixandroid", "0", "-rfbunixpath", "@vncflinger", "-SecurityTypes", "None" };
+		aargs = new String[] { "audiostreamer", "-u", "@audiostreamer" };
 
 		if (!isInternal)
 			display = ((DisplayManager)getSystemService(DISPLAY_SERVICE))
@@ -68,10 +73,10 @@ public class VncFlinger extends Service {
 		});
 
 		new Thread(this::workerThread).start();
+		if (audio) new Thread(this::audioThread).start();
 
 		//function added in private api 33. revisit when moving to a13 - or ignore if its not neccessary
-		//if (touch) return;
-		//if (!((InputManagerInternal)getSystemService(INPUT_SERVICE)).setVirtualMousePointerDisplayId(display.getDisplay().getDisplayId()))
+		//if (!touch && !((InputManagerInternal)getSystemService(INPUT_SERVICE)).setVirtualMousePointerDisplayId(display.getDisplay().getDisplayId()))
 		//	Log.w("VNCFlinger:java", "Failed to override pointer displayId");
 
 
@@ -98,8 +103,13 @@ public class VncFlinger extends Service {
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
-		quit();
-		if (display != null) display.release();
+		cleanup();
+		try {
+			Thread.sleep(100);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		System.exit(0);
 	}
 
 	@Override
@@ -107,9 +117,14 @@ public class VncFlinger extends Service {
 		return null;
 	}
 
-	private void onError(int exitCode) {
+	private void cleanup() {
 		quit();
 		if (display != null) display.release();
+		endAudioStreamer();
+	}
+
+	private void onError(int exitCode) {
+		cleanup();
 		throw new IllegalStateException("VNCFlinger died, exit code " + exitCode);
 	}
 
@@ -121,6 +136,13 @@ public class VncFlinger extends Service {
 				return;
 		}
 		onError(exitCode);
+	}
+
+	private void audioThread() {
+		int exitCode;
+		if ((exitCode = startAudioStreamer(aargs)) != 0) {
+			onError(exitCode);
+		}
 	}
 
 	private void doSetDisplayProps() {
@@ -181,4 +203,6 @@ public class VncFlinger extends Service {
 	private native void quit();
 	private native Surface getSurface();
 	private native void notifyServerClipboardChanged();
+	private native int startAudioStreamer(String[] commandLineArgs);
+	private native void endAudioStreamer();
 }

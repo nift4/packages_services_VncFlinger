@@ -19,6 +19,7 @@
 
 int createTCPSocket(int port);
 int createUnixSocket(const char *name);
+int createAndroidSocket(const char *name);
 void closeSocket(int sock);
 int acceptSocket(int sock);
 bool sendDataSocket(int sock, void *data, int length, int timeout);

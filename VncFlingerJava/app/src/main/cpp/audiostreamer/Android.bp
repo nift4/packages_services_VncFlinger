@@ -17,13 +17,13 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-cc_binary {
-    name: "audiostreamer",
-    init_rc: ["audiostreamer.rc"],
+cc_library {
+    name: "libjni_audiostreamer",
     srcs: ["audiostreamer.cpp", "socketmanager.cpp"],
     cflags: [
         "-Wall",
         "-Werror",
+        "-Wno-unused-parameter",
     ],
     shared_libs: [
         "liblog",
@@ -32,6 +32,7 @@ cc_binary {
         "libbinder",
         "libaudioclient",
         "framework-permission-aidl-cpp",
+        "libnativehelper",
     ],
     header_libs: [
         "libmedia_headers",

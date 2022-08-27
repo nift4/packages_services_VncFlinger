@@ -140,11 +140,13 @@ public class VncFlinger extends Service {
 		}
 	}
 
+	//used from native
 	private void setServerClipboard(String text) {
 		ClipData clip = ClipData.newPlainText("VNCFlinger", text);
 		mClipboard.setPrimaryClip(clip);
 	}
 
+	//used from native
 	private String getServerClipboard() {
 		String text = "";
 		if (mClipboard.hasPrimaryClip() && mClipboard.getPrimaryClipDescription().hasMimeType(MIMETYPE_TEXT_PLAIN)) {
@@ -152,7 +154,7 @@ public class VncFlinger extends Service {
 			int i = 0;
 			while (!MIMETYPE_TEXT_PLAIN.equals(mClipboard.getPrimaryClipDescription().getMimeType(i)))
 				i++;
-			ClipData.Item item = clipData.getItemAt(0);
+			ClipData.Item item = clipData.getItemAt(i);
 			text = item.getText().toString();
 		} else if (mClipboard.hasPrimaryClip()) {
 			Log.w("VNCFlinger:Clipboard", "cannot paste :(");

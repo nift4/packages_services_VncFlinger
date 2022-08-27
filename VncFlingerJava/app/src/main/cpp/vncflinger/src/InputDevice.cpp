@@ -559,12 +559,15 @@ status_t InputDevice::doBasicKeyEvent(uint16_t code, bool down) {
         ALOGE("Unknown keysym %d", code);
         return BAD_VALUE;
     }
-    if (down && needAlt) doKeyboardEvent(KEY_LEFTALT, true);
-    if (down && needShift) doKeyboardEvent(KEY_LEFTSHIFT, true);
+    if (down) {
+        doKeyboardEvent(KEY_LEFTALT, needAlt);
+        doKeyboardEvent(KEY_LEFTSHIFT, needShift);
+    }
     doKeyboardEvent(scanCode, down);
-    if (down && needShift) doKeyboardEvent(KEY_LEFTSHIFT, false);
-    if (down && needAlt) doKeyboardEvent(KEY_LEFTALT, false);
-
+    if (down) {
+        doKeyboardEvent(KEY_LEFTSHIFT, false);
+        doKeyboardEvent(KEY_LEFTALT, false);
+    }
     return OK;
 }
 

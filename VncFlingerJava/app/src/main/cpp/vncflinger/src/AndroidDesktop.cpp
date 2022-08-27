@@ -76,7 +76,6 @@ void AndroidDesktop::stop() {
 void AndroidDesktop::handleClipboardRequest() {
     const char* data = getJniCallbackGetClipboard();
     if (strlen(data)) mServer->sendClipboardData(data);
-    free((void*)data);
 }
 
 void AndroidDesktop::handleClipboardAnnounce(bool available) {

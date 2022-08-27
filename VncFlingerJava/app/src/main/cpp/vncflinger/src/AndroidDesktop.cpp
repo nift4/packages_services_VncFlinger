@@ -22,6 +22,7 @@ using namespace vncflinger;
 using namespace android;
 //main.cpp
 extern void runJniCallback();
+extern void runJniCallbackResize(int32_t w, int32_t h);
 extern void runJniCallbackSetClipboard(const char* text);
 extern const char* getJniCallbackGetClipboard();
 
@@ -131,7 +132,11 @@ void AndroidDesktop::notify() {
 // called when a client resizes the window
 unsigned int AndroidDesktop::setScreenLayout(int reqWidth, int reqHeight,
                                              const rfb::ScreenSet& layout) {
-	if (mLayerId != 0) return rfb::resultInvalid; // not supported on devices other than internal display, let vncviewer handle the problem :)
+	if (mLayerId < 0) {
+        runJniCallbackResize(reqWidth, reqHeight);
+        // if we return success, we crash because the mode change took too long.
+        return rfb::resultInvalid;
+    }
 
     Mutex::Autolock _l(mLock);
 
@@ -234,7 +239,7 @@ rfb::ScreenSet AndroidDesktop::computeScreenLayout() {
 }
 
 void AndroidDesktop::onBufferDimensionsChanged(uint32_t width, uint32_t height) {
-    ALOGV("Dimensions changed: old=(%ux%u) new=(%ux%u)", mDisplayRect.getWidth(),
+    ALOGI("Dimensions changed: old=(%ux%u) new=(%ux%u)", mDisplayRect.getWidth(),
           mDisplayRect.getHeight(), width, height);
 
     mVirtualDisplay.clear();

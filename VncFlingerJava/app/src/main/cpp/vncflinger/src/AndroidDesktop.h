@@ -59,7 +59,7 @@ class AndroidDesktop : public rfb::SDesktop,
     virtual void queryConnection(network::Socket* sock, const char* userName);
 
 	// Virtual display controller
-	uint32_t mLayerId = -1;
+	int32_t mLayerId = -1;
     sp<VirtualDisplay> mVirtualDisplay;
     int32_t _width = 1, _height = 1, _rotation = 0;
 	bool touch = false, relative = false;

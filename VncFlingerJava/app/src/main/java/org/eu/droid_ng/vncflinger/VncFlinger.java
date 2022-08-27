@@ -30,6 +30,7 @@ public class VncFlinger extends Service {
 	public VirtualDisplay display;
 	public ClipboardManager mClipboard;
 	public boolean isInternal;
+	public boolean allowResize;
 	public boolean touch;
 	public boolean relative;
 	public int w;
@@ -48,6 +49,7 @@ public class VncFlinger extends Service {
 		touch = intent.getBooleanExtra("touch", false);
 		relative = intent.getBooleanExtra("useRelativeInput", false);
 		isInternal = intent.getBooleanExtra("isInternal", false);
+		allowResize = intent.getBooleanExtra("allowResize", false);
 		if ((w < 0 || h < 0 || dpi < 0) && !isInternal) {
 			throw new IllegalStateException("invalid extras");
 		}
@@ -138,6 +140,16 @@ public class VncFlinger extends Service {
 		} catch (NullPointerException unused) {
 			Log.w("VNCFlinger", "Failed to set new surface");
 		}
+	}
+
+	//used from native
+	private void resize(int w, int h) {
+		if (!allowResize)
+			return;
+		Log.i("VNCFlinger", "resize " + this.w + "x" + this.h + " to " + w + "*" + h);
+		this.w = w; this.h = h;
+		display.resize(w, h, dpi);
+		doSetDisplayProps();
 	}
 
 	//used from native

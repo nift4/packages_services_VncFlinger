@@ -48,6 +48,7 @@ static sp<AndroidDesktop> desktop = NULL;
 static JNIEnv* gEnv;
 static jobject gThiz;
 static jmethodID gMethod;
+static jmethodID gMethodResize;
 static jmethodID gMethodSetClipboard;
 static jmethodID gMethodGetClipboard;
 
@@ -67,6 +68,10 @@ static void CleanupSignalHandler(int)
 
 void runJniCallback() {
 	gEnv->CallVoidMethod(gThiz, gMethod);
+}
+
+void runJniCallbackResize(int32_t w, int32_t h) {
+	gEnv->CallVoidMethod(gThiz, gMethodResize, w, h);
 }
 
 void runJniCallbackSetClipboard(const char* text) {
@@ -102,7 +107,8 @@ extern "C" jint Java_org_eu_droid_1ng_vncflinger_VncFlinger_initializeVncFlinger
 	env->DeleteLocalRef(command_line_args);
 	gThiz = thiz; gEnv = env;
 	gMethod = env->GetMethodID(env->GetObjectClass(thiz), "callback", "()V");
-    gMethodSetClipboard = env->GetMethodID(env->GetObjectClass(thiz), "setServerClipboard", "(Ljava/lang/String;)V");
+	gMethodResize = env->GetMethodID(env->GetObjectClass(thiz), "resize", "(II)V");
+	gMethodSetClipboard = env->GetMethodID(env->GetObjectClass(thiz), "setServerClipboard", "(Ljava/lang/String;)V");
     gMethodGetClipboard = env->GetMethodID(env->GetObjectClass(thiz), "getServerClipboard", "()Ljava/lang/String;");
 	return old_main1(argc, argv);
 }

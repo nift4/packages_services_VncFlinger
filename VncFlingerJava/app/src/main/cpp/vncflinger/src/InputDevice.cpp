@@ -328,8 +328,14 @@ static symbolKeysymToDirectKey_t symbolKeysymToDirectKey[] = {
     {XK_aring, KEY_A, false, true},
 
     {XK_Ccedilla, KEY_C, true, true},
-    {XK_ccedilla, KEY_C, false, true}
-};
+    {XK_ccedilla, KEY_C, false, true},
+
+    {XK_EuroSign, KEY_2, true, true},
+    {XK_masculine, KEY_0, false, true},
+
+    {163, KEY_3, false, true},
+    {223, KEY_S, false, true},
+    {167, KEY_6, false, true}};
 
 // q,w,e,r,t,y,u,i,o,p,a,s,d,f,g,h,j,k,l,z,x,c,v,b,n,m
 static const int qwerty[] = {30, 48, 46, 32, 18, 33, 34, 35, 23, 36, 37, 38, 50,

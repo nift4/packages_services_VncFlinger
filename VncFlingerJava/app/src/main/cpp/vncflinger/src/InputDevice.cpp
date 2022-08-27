@@ -107,8 +107,6 @@ deadCharsToAltChar_t deadCharsToAltChar[] = {
     {XK_acute, KEY_E},
     {XK_asciicircum, KEY_I},
     {XK_diaeresis, KEY_U},
-    {XK_degree, 0},
-    {XK_cedilla, 0},
     {XK_asciitilde, KEY_N}
 };
 
@@ -165,12 +163,6 @@ latin1ToDeadChars_t latin1ToDeadChars[] = {
     {XK_odiaeresis, XK_diaeresis, XK_o},
     {XK_udiaeresis, XK_diaeresis, XK_u},
     {XK_ydiaeresis, XK_diaeresis, XK_y},
-
-    {XK_Aring, XK_degree, XK_A},
-    {XK_aring, XK_degree, XK_a},
-
-    {XK_Ccedilla, XK_cedilla, XK_C},
-    {XK_ccedilla, XK_cedilla, XK_c},
 
     {XK_Atilde, XK_asciitilde, XK_A},
     {XK_Ntilde, XK_asciitilde, XK_N},
@@ -291,45 +283,53 @@ struct symbolKeysymToDirectKey_t {
     uint32_t keysym;
     uint32_t directKey;
     bool needShift;
+    bool needAlt;
 };
 
 static symbolKeysymToDirectKey_t symbolKeysymToDirectKey[] = {
-    {XK_space, KEY_SPACE, false},
-    {XK_exclam, KEY_1, true},
-    {XK_quotedbl, KEY_APOSTROPHE, true},
-    {XK_numbersign, KEY_3, true},
-    {XK_dollar, KEY_4, true},
-    {XK_percent, KEY_5, true},
-    {XK_ampersand, KEY_7, true},
-    {XK_apostrophe, KEY_APOSTROPHE, false},
-    {XK_parenleft, KEY_9, true},
-    {XK_parenright, KEY_0, true},
-    {XK_asterisk, KEY_8, true},
-    {XK_plus, KEY_EQUAL, true},
-    {XK_comma, KEY_COMMA, false},
-    {XK_minus, KEY_MINUS, false},
-    {XK_period, KEY_DOT, false},
-    {XK_slash, KEY_SLASH, false},
+    {XK_space, KEY_SPACE, false, false},
+    {XK_exclam, KEY_1, true, false},
+    {XK_quotedbl, KEY_APOSTROPHE, true, false},
+    {XK_numbersign, KEY_3, true, false},
+    {XK_dollar, KEY_4, true, false},
+    {XK_percent, KEY_5, true, false},
+    {XK_ampersand, KEY_7, true, false},
+    {XK_apostrophe, KEY_APOSTROPHE, false, false},
+    {XK_parenleft, KEY_9, true, false},
+    {XK_parenright, KEY_0, true, false},
+    {XK_asterisk, KEY_8, true, false},
+    {XK_plus, KEY_EQUAL, true, false},
+    {XK_comma, KEY_COMMA, false, false},
+    {XK_minus, KEY_MINUS, false, false},
+    {XK_period, KEY_DOT, false, false},
+    {XK_slash, KEY_SLASH, false, false},
 
-    {XK_colon, KEY_SEMICOLON, true},
-    {XK_semicolon, KEY_SEMICOLON, false},
-    {XK_less, KEY_COMMA, true},
-    {XK_equal, KEY_EQUAL, false},
-    {XK_greater, KEY_DOT, true},
-    {XK_question, KEY_SLASH, true},
-    {XK_at, KEY_2, true},
+    {XK_colon, KEY_SEMICOLON, true, false},
+    {XK_semicolon, KEY_SEMICOLON, false, false},
+    {XK_less, KEY_COMMA, true, false},
+    {XK_equal, KEY_EQUAL, false, false},
+    {XK_greater, KEY_DOT, true, false},
+    {XK_question, KEY_SLASH, true, false},
+    {XK_at, KEY_2, true, false},
 
-    {XK_bracketleft, KEY_LEFTBRACE, false},
-    {XK_backslash, KEY_BACKSLASH, false},
-    {XK_bracketright, KEY_RIGHTBRACE, false},
-    {XK_asciicircum, KEY_6, true},
-    {XK_underscore, KEY_MINUS, true},
-    {XK_grave, KEY_GRAVE, false},
+    {XK_bracketleft, KEY_LEFTBRACE, false, false},
+    {XK_backslash, KEY_BACKSLASH, false, false},
+    {XK_bracketright, KEY_RIGHTBRACE, false, false},
+    {XK_asciicircum, KEY_6, true, false},
+    {XK_underscore, KEY_MINUS, true, false},
+    {XK_grave, KEY_GRAVE, false, false},
 
-    {XK_braceleft, KEY_LEFTBRACE, true},
-    {XK_bar, KEY_BACKSLASH, true},
-    {XK_braceright, KEY_RIGHTBRACE, true},
-    {XK_asciitilde, KEY_GRAVE, true}};
+    {XK_braceleft, KEY_LEFTBRACE, true, false},
+    {XK_bar, KEY_BACKSLASH, true, false},
+    {XK_braceright, KEY_RIGHTBRACE, true, false},
+    {XK_asciitilde, KEY_GRAVE, true, false},
+
+    {XK_Aring, KEY_A, true, true},
+    {XK_aring, KEY_A, false, true},
+
+    {XK_Ccedilla, KEY_C, true, true},
+    {XK_ccedilla, KEY_C, false, true}
+};
 
 // q,w,e,r,t,y,u,i,o,p,a,s,d,f,g,h,j,k,l,z,x,c,v,b,n,m
 static const int qwerty[] = {30, 48, 46, 32, 18, 33, 34, 35, 23, 36, 37, 38, 50,
@@ -527,6 +527,7 @@ status_t InputDevice::doKeyboardEvent(uint16_t code, bool down) {
 
 status_t InputDevice::doBasicKeyEvent(uint16_t code, bool down) {
     bool needShift = false;
+    bool needAlt = false;
     int scanCode = 0;
 
     // QWERTY and Numbers
@@ -543,6 +544,7 @@ status_t InputDevice::doBasicKeyEvent(uint16_t code, bool down) {
         if (symbolKeysymToDirectKey[i].keysym == code) {
             scanCode = symbolKeysymToDirectKey[i].directKey;
             needShift = symbolKeysymToDirectKey[i].needShift;
+            needAlt = symbolKeysymToDirectKey[i].needAlt;
             break;
         }
     }
@@ -551,8 +553,13 @@ status_t InputDevice::doBasicKeyEvent(uint16_t code, bool down) {
         ALOGE("Unknown keysym %d", code);
         return BAD_VALUE;
     }
-    if (needShift) doKeyboardEvent(KEY_LEFTSHIFT, down);
-    return doKeyboardEvent(scanCode, down);
+    if (down && needAlt) doKeyboardEvent(KEY_LEFTALT, true);
+    if (down && needShift) doKeyboardEvent(KEY_LEFTSHIFT, true);
+    doKeyboardEvent(scanCode, down);
+    if (down && needShift) doKeyboardEvent(KEY_LEFTSHIFT, false);
+    if (down && needAlt) doKeyboardEvent(KEY_LEFTALT, false);
+
+    return OK;
 }
 
 void InputDevice::keyEvent(bool down, uint32_t keysym) {
@@ -576,20 +583,14 @@ void InputDevice::keyEvent(bool down, uint32_t keysym) {
         if (keysym == latin1ToDeadChars[j].latin1Char) {
             for (unsigned int i = 0; i < sizeof(deadCharsToAltChar) / sizeof(deadCharsToAltChar_t); i++) {
                 if (latin1ToDeadChars[j].deadChar == deadCharsToAltChar[i].deadChar) {
-                    if (deadCharsToAltChar[i].altChar == 0) {
-                        // Alt + BaseChar
-                        doKeyboardEvent(KEY_LEFTALT, down);
-                        doBasicKeyEvent(latin1ToDeadChars[j].baseChar, down);
-                    } else {
-                        // Alt + AltChar, BaseChar
-                        if (down) {
-                            doKeyboardEvent(KEY_LEFTALT, true);
-                            doKeyboardEvent(deadCharsToAltChar[i].altChar, true);
-                            doKeyboardEvent(KEY_LEFTALT, false);
-                            doKeyboardEvent(deadCharsToAltChar[i].altChar, false);
-                        }
-                        doBasicKeyEvent(latin1ToDeadChars[j].baseChar, down);
+                    // Alt + AltChar, BaseChar
+                    if (down) {
+                        doKeyboardEvent(KEY_LEFTALT, true);
+                        doKeyboardEvent(deadCharsToAltChar[i].altChar, true);
+                        doKeyboardEvent(KEY_LEFTALT, false);
+                        doKeyboardEvent(deadCharsToAltChar[i].altChar, false);
                     }
+                    doBasicKeyEvent(latin1ToDeadChars[j].baseChar, down);
                     return;
                 }
             }

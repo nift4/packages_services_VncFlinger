@@ -20,7 +20,6 @@
 
 #include <future>
 
-#include "DirectInputCodes.h"
 #include "InputDevice.h"
 
 #include <fcntl.h>
@@ -104,13 +103,13 @@ struct deadCharsToAltChar_t {
 };
 
 deadCharsToAltChar_t deadCharsToAltChar[] = {
-    {XK_grave, DIK_GRAVE},
-    {XK_acute, DIK_E},
-    {XK_asciicircum, DIK_I},
-    {XK_diaeresis, DIK_U},
+    {XK_grave, KEY_GRAVE},
+    {XK_acute, KEY_E},
+    {XK_asciicircum, KEY_I},
+    {XK_diaeresis, KEY_U},
     {XK_degree, 0},
     {XK_cedilla, 0},
-    {XK_asciitilde, DIK_N}
+    {XK_asciitilde, KEY_N}
 };
 
 struct latin1ToDeadChars_t {
@@ -187,96 +186,105 @@ struct spicialKeysymToDirectKey_t {
 };
 
 static spicialKeysymToDirectKey_t spicialKeysymToDirectKey[] = {
-    {XK_BackSpace, DIK_BACK},
-    {XK_Tab, DIK_TAB},
-    {XK_Return, DIK_RETURN},
-    {XK_Pause, DIK_PAUSE},
-    {XK_Escape, DIK_ESCAPE},
-    {XK_Delete, DIK_DELETE},
+    {XK_BackSpace, KEY_BACKSPACE},
+    {XK_Tab, KEY_TAB},
+    {XK_Return, KEY_ENTER},
+    {XK_Pause, KEY_PAUSE},
+    {XK_Escape, KEY_ESC},
+    {XK_Delete, KEY_DELETE},
 
     // Cursor control & motion
-    {XK_Home, DIK_HOME},
-    {XK_Left, DIK_LEFT},
-    {XK_Up, DIK_UP},
-    {XK_Right, DIK_RIGHT},
-    {XK_Down, DIK_DOWN},
-    {XK_Page_Up, DIK_PRIOR},
-    {XK_Page_Down, DIK_NEXT},
-    {XK_End, DIK_END},
+    {XK_Home, KEY_HOME},
+    {XK_Left, KEY_LEFT},
+    {XK_Up, KEY_UP},
+    {XK_Right, KEY_RIGHT},
+    {XK_Down, KEY_DOWN},
+    {XK_Page_Up, KEY_PAGEUP},
+    {XK_Page_Down, KEY_PAGEDOWN},
+    {XK_End, KEY_END},
 
     // Misc functions
-    {XK_Insert, DIK_INSERT},
+    {XK_Insert, KEY_INSERT},
 
     // Auxiliary Functions - must come before XK_KP_F1, etc
-    {XK_F1, DIK_F1},
-    {XK_F2, DIK_F2},
-    {XK_F3, DIK_F3},
-    {XK_F4, DIK_F4},
-    {XK_F5, DIK_F5},
-    {XK_F6, DIK_F6},
-    {XK_F7, DIK_F7},
-    {XK_F8, DIK_F8},
-    {XK_F9, DIK_F9},
-    {XK_F10, DIK_F10},
-    {XK_F11, DIK_F11},
-    {XK_F12, DIK_F12},
-    {XK_F13, DIK_F13},
-    {XK_F14, DIK_F14},
-    {XK_F15, DIK_F15},
+    {XK_F1, KEY_F1},
+    {XK_F2, KEY_F2},
+    {XK_F3, KEY_F3},
+    {XK_F4, KEY_F4},
+    {XK_F5, KEY_F5},
+    {XK_F6, KEY_F6},
+    {XK_F7, KEY_F7},
+    {XK_F8, KEY_F8},
+    {XK_F9, KEY_F9},
+    {XK_F10, KEY_F10},
+    {XK_F11, KEY_F11},
+    {XK_F12, KEY_F12},
+    {XK_F13, KEY_F13},
+    {XK_F14, KEY_F14},
+    {XK_F15, KEY_F15},
+    {XK_F16, KEY_F16},
+    {XK_F17, KEY_F17},
+    {XK_F18, KEY_F18},
+    {XK_F19, KEY_F19},
+    {XK_F20, KEY_F20},
+    {XK_F21, KEY_F21},
+    {XK_F22, KEY_F22},
+    {XK_F23, KEY_F23},
+    {XK_F24, KEY_F24},
 
     // Keypad Functions, keypad numbers
-    {XK_KP_Tab, DIK_TAB},
-    {XK_KP_Enter, DIK_RETURN},
-    {XK_KP_F1, DIK_F1},
-    {XK_KP_F2, DIK_F2},
-    {XK_KP_F3, DIK_F3},
-    {XK_KP_F4, DIK_F4},
-    {XK_KP_Home, DIK_HOME},
-    {XK_KP_Left, DIK_LEFT},
-    {XK_KP_Up, DIK_UP},
-    {XK_KP_Right, DIK_RIGHT},
-    {XK_KP_Down, DIK_DOWN},
-    {XK_KP_End, DIK_END},
-    {XK_KP_Page_Up, DIK_PRIOR},
-    {XK_KP_Page_Down, DIK_NEXT},
-    {XK_KP_Insert, DIK_INSERT},
-    {XK_KP_Delete, DIK_DELETE},
-    {XK_KP_Multiply, DIK_MULTIPLY},
-    {XK_KP_Add, DIK_ADD},
-    {XK_KP_Separator, DIK_COMMA},
-    {XK_KP_Subtract, DIK_SUBTRACT},
-    {XK_KP_Decimal, DIK_DECIMAL},
-    {XK_KP_Divide, DIK_DIVIDE},
+    {XK_KP_Tab, KEY_TAB},
+    {XK_KP_Enter, KEY_KPENTER},
+    {XK_KP_F1, KEY_F1},
+    {XK_KP_F2, KEY_F2},
+    {XK_KP_F3, KEY_F3},
+    {XK_KP_F4, KEY_F4},
+    {XK_KP_Home, KEY_HOME},
+    {XK_KP_Left, KEY_LEFT},
+    {XK_KP_Up, KEY_UP},
+    {XK_KP_Right, KEY_RIGHT},
+    {XK_KP_Down, KEY_DOWN},
+    {XK_KP_End, KEY_END},
+    {XK_KP_Page_Up, KEY_PAGEUP},
+    {XK_KP_Page_Down, KEY_NEXT},
+    {XK_KP_Insert, KEY_INSERT},
+    {XK_KP_Delete, KEY_DELETE},
+    {XK_KP_Multiply, KEY_KPASTERISK},
+    {XK_KP_Add, KEY_KPPLUS},
+    {XK_KP_Separator, KEY_KPCOMMA},
+    {XK_KP_Subtract, KEY_KPMINUS},
+    {XK_KP_Decimal, KEY_KPDOT},
+    {XK_KP_Divide, KEY_KPSLASH},
 
-    {XK_KP_0, DIK_NUMPAD0},
-    {XK_KP_1, DIK_NUMPAD1},
-    {XK_KP_2, DIK_NUMPAD2},
-    {XK_KP_3, DIK_NUMPAD3},
-    {XK_KP_4, DIK_NUMPAD4},
-    {XK_KP_5, DIK_NUMPAD5},
-    {XK_KP_6, DIK_NUMPAD6},
-    {XK_KP_7, DIK_NUMPAD7},
-    {XK_KP_8, DIK_NUMPAD8},
-    {XK_KP_9, DIK_NUMPAD9},
+    {XK_KP_0, KEY_KP0},
+    {XK_KP_1, KEY_KP1},
+    {XK_KP_2, KEY_KP2},
+    {XK_KP_3, KEY_KP3},
+    {XK_KP_4, KEY_KP4},
+    {XK_KP_5, KEY_KP5},
+    {XK_KP_6, KEY_KP6},
+    {XK_KP_7, KEY_KP7},
+    {XK_KP_8, KEY_KP8},
+    {XK_KP_9, KEY_KP9},
 
     // Modifiers
-    {XK_Shift_L, DIK_LSHIFT},
-    {XK_Shift_R, DIK_RSHIFT},
-    {XK_Control_L, DIK_LCONTROL},
-    {XK_Control_R, DIK_RCONTROL},
-    {XK_Alt_L, DIK_LMENU},
-    {XK_Alt_R, DIK_RMENU},
-    {XK_Meta_L, DIK_LMENU},
-    {XK_Meta_R, DIK_RMENU},
+    {XK_Shift_L, KEY_LEFTSHIFT},
+    {XK_Shift_R, KEY_RIGHTSHIFT},
+    {XK_Control_L, KEY_LEFTCTRL},
+    {XK_Control_R, KEY_RIGHTCTRL},
+    {XK_Alt_L, KEY_LEFTALT},
+    {XK_Alt_R, KEY_RIGHTALT},
+    {XK_Meta_L, KEY_LEFTALT},
+    {XK_Meta_R, KEY_RIGHTALT},
 
     // Left & Right Windows keys & Windows Menu Key
-    {XK_Super_L, DIK_LWIN},
-    {XK_Super_R, DIK_RWIN},
-    {XK_Menu, DIK_APPS},
+    {XK_Super_L, 0xDB},
+    {XK_Super_R, 0xDC},
+    {XK_Menu, 0xDD},
 
     // Japanese stuff - almost certainly wrong...
-    {XK_Kanji, DIK_KANJI},
-    {XK_Kana_Shift, DIK_KANA},
+    {XK_Kanji, 0x94},
+    {XK_Kana_Shift, 0x70},
 };
 
 struct symbolKeysymToDirectKey_t {
@@ -286,43 +294,42 @@ struct symbolKeysymToDirectKey_t {
 };
 
 static symbolKeysymToDirectKey_t symbolKeysymToDirectKey[] = {
-    {XK_space, DIK_SPACE, false},
-    {XK_exclam, DIK_1, true},
-    {XK_quotedbl, DIK_APOSTROPHE, true},
-    {XK_numbersign, DIK_3, true},
-    {XK_dollar, DIK_4, true},
-    {XK_percent, DIK_5, true},
-    {XK_ampersand, DIK_7, true},
-    {XK_apostrophe, DIK_APOSTROPHE, false},
-    {XK_parenleft, DIK_9, true},
-    {XK_parenright, DIK_0, true},
-    {XK_asterisk, DIK_8, true},
-    {XK_plus, DIK_EQUALS, true},
-    {XK_comma, DIK_COMMA, false},
-    {XK_minus, DIK_MINUS, false},
-    {XK_period, DIK_PERIOD, false},
-    {XK_slash, DIK_SLASH, false},
+    {XK_space, KEY_SPACE, false},
+    {XK_exclam, KEY_1, true},
+    {XK_quotedbl, KEY_APOSTROPHE, true},
+    {XK_numbersign, KEY_3, true},
+    {XK_dollar, KEY_4, true},
+    {XK_percent, KEY_5, true},
+    {XK_ampersand, KEY_7, true},
+    {XK_apostrophe, KEY_APOSTROPHE, false},
+    {XK_parenleft, KEY_9, true},
+    {XK_parenright, KEY_0, true},
+    {XK_asterisk, KEY_8, true},
+    {XK_plus, KEY_EQUAL, true},
+    {XK_comma, KEY_COMMA, false},
+    {XK_minus, KEY_MINUS, false},
+    {XK_period, KEY_DOT, false},
+    {XK_slash, KEY_SLASH, false},
 
-    {XK_colon, DIK_SEMICOLON, true},
-    {XK_semicolon, DIK_SEMICOLON, false},
-    {XK_less, DIK_COMMA, true},
-    {XK_equal, DIK_EQUALS, false},
-    {XK_greater, DIK_PERIOD, true},
-    {XK_question, DIK_SLASH, true},
-    {XK_at, DIK_2, true},
+    {XK_colon, KEY_SEMICOLON, true},
+    {XK_semicolon, KEY_SEMICOLON, false},
+    {XK_less, KEY_COMMA, true},
+    {XK_equal, KEY_EQUAL, false},
+    {XK_greater, KEY_DOT, true},
+    {XK_question, KEY_SLASH, true},
+    {XK_at, KEY_2, true},
 
-    {XK_bracketleft, DIK_LBRACKET, false},
-    {XK_backslash, DIK_BACKSLASH, false},
-    {XK_bracketright, DIK_RBRACKET, false},
-    {XK_asciicircum, DIK_6, true},
-    {XK_underscore, DIK_MINUS, true},
-    {XK_grave, DIK_GRAVE, false},
+    {XK_bracketleft, KEY_LEFTBRACE, false},
+    {XK_backslash, KEY_BACKSLASH, false},
+    {XK_bracketright, KEY_RIGHTBRACE, false},
+    {XK_asciicircum, KEY_6, true},
+    {XK_underscore, KEY_MINUS, true},
+    {XK_grave, KEY_GRAVE, false},
 
-    {XK_braceleft, DIK_LBRACKET, true},
-    {XK_bar, DIK_BACKSLASH, true},
-    {XK_braceright, DIK_RBRACKET, true},
-    {XK_asciitilde, DIK_GRAVE, true}
-};
+    {XK_braceleft, KEY_LEFTBRACE, true},
+    {XK_bar, KEY_BACKSLASH, true},
+    {XK_braceright, KEY_RIGHTBRACE, true},
+    {XK_asciitilde, KEY_GRAVE, true}};
 
 // q,w,e,r,t,y,u,i,o,p,a,s,d,f,g,h,j,k,l,z,x,c,v,b,n,m
 static const int qwerty[] = {30, 48, 46, 32, 18, 33, 34, 35, 23, 36, 37, 38, 50,
@@ -529,7 +536,7 @@ status_t InputDevice::doBasicKeyEvent(uint16_t code, bool down) {
         scanCode = qwerty[code - 'A'];
     }
     if ('1' <= code && code <= '9') scanCode = (code - '1' + 2);
-    if (code == '0') scanCode = DIK_0;
+    if (code == '0') scanCode = KEY_0;
 
     // Symbols
     for (unsigned int i = 0; i < sizeof(symbolKeysymToDirectKey) / sizeof(symbolKeysymToDirectKey_t); i++) {
@@ -544,7 +551,7 @@ status_t InputDevice::doBasicKeyEvent(uint16_t code, bool down) {
         ALOGE("Unknown keysym %d", code);
         return BAD_VALUE;
     }
-    if (needShift) doKeyboardEvent(DIK_LSHIFT, down);
+    if (needShift) doKeyboardEvent(KEY_LEFTSHIFT, down);
     return doKeyboardEvent(scanCode, down);
 }
 
@@ -571,14 +578,14 @@ void InputDevice::keyEvent(bool down, uint32_t keysym) {
                 if (latin1ToDeadChars[j].deadChar == deadCharsToAltChar[i].deadChar) {
                     if (deadCharsToAltChar[i].altChar == 0) {
                         // Alt + BaseChar
-                        doKeyboardEvent(DIK_LMENU, down);
+                        doKeyboardEvent(KEY_LEFTALT, down);
                         doBasicKeyEvent(latin1ToDeadChars[j].baseChar, down);
                     } else {
                         // Alt + AltChar, BaseChar
                         if (down) {
-                            doKeyboardEvent(DIK_LMENU, true);
+                            doKeyboardEvent(KEY_LEFTALT, true);
                             doKeyboardEvent(deadCharsToAltChar[i].altChar, true);
-                            doKeyboardEvent(DIK_LMENU, false);
+                            doKeyboardEvent(KEY_LEFTALT, false);
                             doKeyboardEvent(deadCharsToAltChar[i].altChar, false);
                         }
                         doBasicKeyEvent(latin1ToDeadChars[j].baseChar, down);

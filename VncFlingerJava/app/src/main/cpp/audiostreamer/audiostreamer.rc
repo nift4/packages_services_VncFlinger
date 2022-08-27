@@ -1,0 +1,12 @@
+service audiostreamer /system/bin/audiostreamer -U
+    class late_start
+    disabled
+    user audioserver
+    group audio media system
+    socket audiostreamer stream 0666 root audioserver
+
+on property:sys.audiostreamer.enable=true
+    start audiostreamer
+
+on property:sys.audiostreamer.enable=false
+    stop audiostreamer

@@ -533,7 +533,6 @@ status_t InputDevice::doKeyboardEvent(uint16_t code, bool down) {
 
 status_t InputDevice::doBasicKeyEvent(uint16_t code, bool down) {
     bool needShift = false;
-    bool needAlt = false;
     int scanCode = 0;
 
     // QWERTY and Numbers
@@ -545,30 +544,12 @@ status_t InputDevice::doBasicKeyEvent(uint16_t code, bool down) {
     if ('1' <= code && code <= '9') scanCode = (code - '1' + 2);
     if (code == '0') scanCode = KEY_0;
 
-    // Symbols
-    for (unsigned int i = 0; i < sizeof(symbolKeysymToDirectKey) / sizeof(symbolKeysymToDirectKey_t); i++) {
-        if (symbolKeysymToDirectKey[i].keysym == code) {
-            scanCode = symbolKeysymToDirectKey[i].directKey;
-            needShift = symbolKeysymToDirectKey[i].needShift;
-            needAlt = symbolKeysymToDirectKey[i].needAlt;
-            break;
-        }
-    }
-
     if (scanCode == 0) {
         ALOGE("Unknown keysym %d", code);
         return BAD_VALUE;
     }
-    if (down) {
-        doKeyboardEvent(KEY_LEFTALT, needAlt);
-        doKeyboardEvent(KEY_LEFTSHIFT, needShift);
-    }
-    doKeyboardEvent(scanCode, down);
-    if (down) {
-        doKeyboardEvent(KEY_LEFTSHIFT, false);
-        doKeyboardEvent(KEY_LEFTALT, false);
-    }
-    return OK;
+    if (needShift) doKeyboardEvent(KEY_LEFTSHIFT, down);
+    return doKeyboardEvent(scanCode, down);
 }
 
 void InputDevice::keyEvent(bool down, uint32_t keysym) {
@@ -610,6 +591,22 @@ void InputDevice::keyEvent(bool down, uint32_t keysym) {
     for (unsigned int i = 0; i < sizeof(spicialKeysymToDirectKey) / sizeof(spicialKeysymToDirectKey_t); i++) {
         if (spicialKeysymToDirectKey[i].keysym == keysym) {
             doKeyboardEvent(spicialKeysymToDirectKey[i].directKey, down);
+            return;
+        }
+    }
+
+    // Symbol Keys
+    for (unsigned int i = 0; i < sizeof(symbolKeysymToDirectKey) / sizeof(symbolKeysymToDirectKey_t); i++) {
+        if (symbolKeysymToDirectKey[i].keysym == keysym) {
+            if (down) {
+                doKeyboardEvent(KEY_LEFTALT, symbolKeysymToDirectKey[i].needAlt);
+                doKeyboardEvent(KEY_LEFTSHIFT, symbolKeysymToDirectKey[i].needShift);
+            }
+            doKeyboardEvent(symbolKeysymToDirectKey[i].directKey, down);
+            if (down) {
+                doKeyboardEvent(KEY_LEFTSHIFT, false);
+                doKeyboardEvent(KEY_LEFTALT, false);
+            }
             return;
         }
     }

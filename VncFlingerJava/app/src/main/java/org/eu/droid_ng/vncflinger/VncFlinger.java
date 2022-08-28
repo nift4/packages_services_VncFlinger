@@ -14,9 +14,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
-//import android.hardware.input.InputManagerInternal;
+import android.hardware.input.ICursorCallback;
+import android.hardware.input.InputManager;
 import android.os.IBinder;
+import android.os.RemoteException;
 import android.util.Log;
+import android.view.PointerIcon;
 import android.view.Surface;
 
 public class VncFlinger extends Service {
@@ -35,6 +38,7 @@ public class VncFlinger extends Service {
 	public boolean allowResize;
 	public boolean touch;
 	public boolean relative;
+	public boolean remoteCursor;
 	public int w;
 	public int h;
 	public int dpi;
@@ -54,6 +58,7 @@ public class VncFlinger extends Service {
 		isInternal = intent.getBooleanExtra("isInternal", false);
 		allowResize = intent.getBooleanExtra("allowResize", false);
 		audio = intent.getBooleanExtra("audio", true);
+		remoteCursor = intent.getBooleanExtra("remoteCursor", false);
 		if ((w < 0 || h < 0 || dpi < 0) && !isInternal) {
 			throw new IllegalStateException("invalid extras");
 		}
@@ -75,10 +80,16 @@ public class VncFlinger extends Service {
 		new Thread(this::workerThread).start();
 		if (audio) new Thread(this::audioThread).start();
 
-		//function added in private api 33. revisit when moving to a13 - or ignore if its not neccessary
-		//if (!touch && !((InputManagerInternal)getSystemService(INPUT_SERVICE)).setVirtualMousePointerDisplayId(display.getDisplay().getDisplayId()))
-		//	Log.w("VNCFlinger:java", "Failed to override pointer displayId");
-
+		if (remoteCursor) {
+			InputManager inputManager = ((InputManager) getSystemService(INPUT_SERVICE));
+			inputManager.registerCursorCallback(new ICursorCallback.Stub() {
+				@Override
+				public void onCursorChanged(int iconId, PointerIcon icon) throws RemoteException {
+					Log.e("VNCFlinger", "got iconId " + iconId);
+				}
+			});
+			inputManager.setForceNullCursor(true);
+		}
 
 		NotificationManager notificationManager = getSystemService(NotificationManager.class);
 		if (notificationManager.getNotificationChannel(CHANNEL_ID) == null) {
@@ -118,9 +129,10 @@ public class VncFlinger extends Service {
 	}
 
 	private void cleanup() {
+		if (remoteCursor) ((InputManager) getSystemService(INPUT_SERVICE)).setForceNullCursor(false);
 		quit();
 		if (display != null) display.release();
-		endAudioStreamer();
+		if (audio) endAudioStreamer();
 	}
 
 	private void onError(int exitCode) {

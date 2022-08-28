@@ -227,7 +227,8 @@ status_t AndroidDesktop::updateDisplayInfo(bool force) {
     }
 
     ALOGV("updateDisplayInfo: [%d:%d], rotated %d, layerId %d", mDisplayMode.width, mDisplayMode.height, mDisplayState, mLayerId);
-	mPixels->setDisplayInfo(&mDisplayMode, &mDisplayState, force);
+	if (mPixels != NULL)
+        mPixels->setDisplayInfo(&mDisplayMode, &mDisplayState, force);
     return NO_ERROR;
 }
 

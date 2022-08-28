@@ -91,6 +91,11 @@ void AndroidDesktop::notifyClipboardChanged() {
     if (mServer) mServer->announceClipboard(true);
 }
 
+void AndroidDesktop::setCursor(int width, int height, int hotX, int hotY,
+                               const unsigned char* buffer) {
+    if (mServer) mServer->setCursor(width, height, rfb::Point(hotX, hotY), buffer);
+}
+
 void AndroidDesktop::processFrames() {
     Mutex::Autolock _l(mLock);
 

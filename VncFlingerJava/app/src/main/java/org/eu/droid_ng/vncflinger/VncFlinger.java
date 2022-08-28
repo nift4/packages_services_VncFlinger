@@ -44,12 +44,17 @@ public class VncFlinger extends Service {
 	public int dpi;
 	public String[] args;
 	public String[] aargs;
+	public PointerIcon mOldPointerIcon;
+	public int mOldPointerIconId;
+
+	private Context mContext;
 
 	@SuppressLint("ServiceCast")
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		super.onStartCommand(intent, flags, startId);
 
+		mContext = this;
 		w = intent.getIntExtra("width", -1);
 		h = intent.getIntExtra("height", -1);
 		dpi = intent.getIntExtra("dpi", -1);
@@ -85,7 +90,19 @@ public class VncFlinger extends Service {
 			inputManager.registerCursorCallback(new ICursorCallback.Stub() {
 				@Override
 				public void onCursorChanged(int iconId, PointerIcon icon) throws RemoteException {
-					Log.e("VNCFlinger", "got iconId " + iconId);
+					if (iconId == mOldPointerIconId)
+						return;
+
+					if (icon == null) {
+						Context content = mContext.createDisplayContext(display.getDisplay());
+						icon = PointerIcon.getSystemIcon(content, iconId).load(content);
+					}
+					if ((mOldPointerIcon != null) && mOldPointerIcon.equals(icon))
+						return;
+
+					notifyServerCursorChanged(icon);
+					mOldPointerIcon = icon;
+					mOldPointerIconId = iconId;
 				}
 			});
 			inputManager.setForceNullCursor(true);
@@ -217,4 +234,5 @@ public class VncFlinger extends Service {
 	private native void notifyServerClipboardChanged();
 	private native int startAudioStreamer(String[] commandLineArgs);
 	private native void endAudioStreamer();
+	private native void notifyServerCursorChanged(PointerIcon icon);
 }

@@ -24,6 +24,7 @@ cc_library {
         "libcrypto",
         "libcutils",
         "libgui",
+        "libhwui",
         "libjpeg",
         "libssl",
         "libui",
@@ -32,6 +33,7 @@ cc_library {
         "liblog",
         "libnativewindow",
         "libandroid",
+        "libandroid_runtime",
     ],
     static_libs: [
         "libtigervnc",

@@ -3,6 +3,7 @@
 #include <jni.h>
 #include <gui/Surface.h>
 #include <android/native_window_jni.h>
+#include <android_view_PointerIcon.h>
 
 #include <fcntl.h>
 #include <fstream>
@@ -91,6 +92,28 @@ const char* getJniCallbackGetClipboard() {
 
 int old_main1(int argc, char** argv);
 int old_main2();
+
+extern "C" void Java_org_eu_droid_1ng_vncflinger_VncFlinger_notifyServerCursorChanged(
+    JNIEnv* env, jobject thiz, jobject pointerIconObj) {
+    PointerIcon pointerIcon;
+
+    if (desktop != NULL) {
+        status_t result = android_view_PointerIcon_getLoadedIcon(env, pointerIconObj, &pointerIcon);
+        if (result) {
+            ALOGE("Failed to load pointer icon.");
+            return;
+        }
+        if (!pointerIcon.bitmap.isValid()) {
+            ALOGE("Pointer icon bitmap not valid");
+            return;
+        }
+        AndroidBitmapInfo bitmapInfo = pointerIcon.bitmap.getInfo();
+
+        desktop->setCursor(bitmapInfo.width, bitmapInfo.height, pointerIcon.hotSpotX,
+                           pointerIcon.hotSpotY, (unsigned char*)pointerIcon.bitmap.getPixels());
+    }
+    return;
+}
 
 extern "C" jint Java_org_eu_droid_1ng_vncflinger_VncFlinger_initializeVncFlinger(JNIEnv *env,
                                                                                    jobject thiz,

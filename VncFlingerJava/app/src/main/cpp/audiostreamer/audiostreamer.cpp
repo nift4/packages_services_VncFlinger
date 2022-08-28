@@ -116,7 +116,7 @@ void audiostreamer_record_thread(void *arg) {
         if (!sendDataSocket(nSock, pReadBuf, iReadLen, 0)) break;
     }
 
-    if (pAudioRecord != NULL && !gRunning) {
+    if (pAudioRecord != NULL) {
         ALOGI("%s: pAudioRecord->stop", __FUNCTION__);
         pAudioRecord->stop();
         if (pAudioRecord->stopped()) {

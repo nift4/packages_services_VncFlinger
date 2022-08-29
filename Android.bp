@@ -1,0 +1,20 @@
+android_app {
+    name: "VncFlinger",
+    platform_apis: true,
+    certificate: "platform",
+    privileged: true,
+    init_rc: ["etc/vncflinger.rc"],
+    srcs: ["java/**/*.java"],
+    optimize: {
+        proguard_flags_files: ["proguard-rules.pro"],
+    },
+    system_ext_specific: true,
+    jni_libs: [
+        "libjni_vncflinger",
+        "libjni_audiostreamer",
+    ],
+    required: [
+        "libjni_vncflinger",
+        "libjni_audiostreamer",
+    ],
+}

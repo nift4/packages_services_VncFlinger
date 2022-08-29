@@ -2,12 +2,12 @@ cc_library {
     name: "libjni_vncflinger",
 
     srcs: [
-        "src/AndroidDesktop.cpp",
-        "src/AndroidPixelBuffer.cpp",
-        "src/AndroidSocket.cpp",
-        "src/InputDevice.cpp",
-        "src/VirtualDisplay.cpp",
-        "src/main.cpp",
+        "AndroidDesktop.cpp",
+        "AndroidPixelBuffer.cpp",
+        "AndroidSocket.cpp",
+        "InputDevice.cpp",
+        "VirtualDisplay.cpp",
+        "main.cpp",
     ],
     cflags: [
         "-DVNCFLINGER_VERSION=1.0",
@@ -39,7 +39,7 @@ cc_library {
         "libtigervnc",
     ],
     local_include_dirs: [
-        "src",
+        ".",
     ],
     system_ext_specific: true,
 }

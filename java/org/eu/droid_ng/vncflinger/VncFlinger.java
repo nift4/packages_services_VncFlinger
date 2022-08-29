@@ -174,8 +174,10 @@ public class VncFlinger extends Service {
 		int exitCode;
 		if ((exitCode = initializeVncFlinger(args)) == 0) {
 			doSetDisplayProps();
-			if ((exitCode = mainLoop()) == 0)
+			if ((exitCode = mainLoop()) == 0) {
+                stopForeground(STOP_FOREGROUND_REMOVE);
 				return;
+            }
 		}
 		onError(exitCode);
 	}

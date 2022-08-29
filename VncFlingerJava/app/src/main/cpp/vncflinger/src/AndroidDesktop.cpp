@@ -91,9 +91,10 @@ void AndroidDesktop::notifyClipboardChanged() {
     if (mServer) mServer->announceClipboard(true);
 }
 
-void AndroidDesktop::setCursor(int width, int height, int hotX, int hotY,
-                               const unsigned char* buffer) {
-    if (mServer) mServer->setCursor(width, height, rfb::Point(hotX, hotY), buffer);
+void AndroidDesktop::setCursor(uint32_t width, uint32_t height, int hotX, int hotY,
+                               const rdr::U8* buffer) {
+    cursorChanged = true;
+    cur_width = width; cur_height = height; cur_buffer = buffer; cur_hotX = hotX; cur_hotY = hotY;
 }
 
 void AndroidDesktop::processFrames() {
@@ -126,6 +127,8 @@ void AndroidDesktop::processFrames() {
 
     // update clients
     mServer->add_changed(bufRect);
+
+    if (cursorChanged) mServer->setCursor(cur_width, cur_height, rfb::Point(cur_hotX, cur_hotY), cur_buffer);
 }
 
 // notifies the server loop that we have changes

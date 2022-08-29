@@ -40,7 +40,7 @@ class AndroidDesktop : public rfb::SDesktop,
     virtual void handleClipboardAnnounce(bool available);
     virtual void handleClipboardData(const char* data);
     virtual void notifyClipboardChanged();
-    virtual void setCursor(int width, int height, int hotX, int hotY, const unsigned char* buffer);
+    virtual void setCursor(uint32_t width, uint32_t height, int hotX, int hotY, const rdr::U8* buffer);
 
     virtual unsigned int setScreenLayout(int fb_width, int fb_height, const rfb::ScreenSet& layout);
 
@@ -91,6 +91,11 @@ class AndroidDesktop : public rfb::SDesktop,
 
     // Virtual input device
     sp<InputDevice> mInputDevice;
+
+	bool cursorChanged = false;
+	uint32_t cur_width, cur_height;
+	int cur_hotX, cur_hotY;
+	const rdr::U8* cur_buffer;
 };
 };
 

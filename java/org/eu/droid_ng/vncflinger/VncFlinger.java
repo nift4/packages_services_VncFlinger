@@ -7,9 +7,11 @@ import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ClipData;
 import android.content.ClipboardManager;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.hardware.display.DisplayManager;
@@ -47,6 +49,10 @@ public class VncFlinger extends Service {
 	public PointerIcon mOldPointerIcon;
 	public int mOldPointerIconId;
 
+	public boolean nIntentEnable;
+	public String nIntentPkg;
+	public String nIntentComponent;
+
 	private Context mContext;
 
 	@SuppressLint("ServiceCast")
@@ -64,6 +70,9 @@ public class VncFlinger extends Service {
 		allowResize = intent.getBooleanExtra("allowResize", false);
 		audio = intent.getBooleanExtra("audio", true);
 		remoteCursor = intent.getBooleanExtra("remoteCursor", false);
+		nIntentEnable = intent.getBooleanExtra("nIntentEnable", false);
+		nIntentPkg = intent.getStringExtra("nIntentPkg");
+		nIntentComponent = intent.getStringExtra("nIntentComponent");
 		if ((w < 0 || h < 0 || dpi < 0) && !isInternal) {
 			throw new IllegalStateException("invalid extras");
 		}
@@ -118,13 +127,17 @@ public class VncFlinger extends Service {
 			channel.setBlockable(true);
 			notificationManager.createNotificationChannel(channel);
 		}
-		Notification notification =
+		Notification.Builder notification =
 				new Notification.Builder(this, CHANNEL_ID)
 						.setContentTitle(getText(R.string.notification_title))
 						.setContentText(getString(R.string.notification_message, getText(R.string.app_name)))
-						.setSmallIcon(R.drawable.ic_desktop)
-						.build();
-		startForeground(ONGOING_NOTIFICATION_ID, notification);
+						.setSmallIcon(R.drawable.ic_desktop);
+		if (nIntentEnable) {
+			Intent i = new Intent();
+			i.setComponent(new ComponentName(nIntentPkg, nIntentComponent));
+			notification.setContentIntent(PendingIntent.getActivity(mContext, 0, i, PendingIntent.FLAG_IMMUTABLE));
+		}
+		startForeground(ONGOING_NOTIFICATION_ID, notification.build());
 		return START_NOT_STICKY;
 	}
 

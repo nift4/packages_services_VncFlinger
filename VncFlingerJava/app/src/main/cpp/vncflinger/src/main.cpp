@@ -371,11 +371,12 @@ int old_main2() {
                 if (FD_ISSET((*i)->getFd(), &wfds)) server.processSocketWriteEvent(*i);
             }
 
-            // Process events from the display
+	        // Process events from the display
             uint64_t eventVal;
             int status = read(eventFd, &eventVal, sizeof(eventVal));
             if (status > 0 && eventVal > 0) {
                 //ALOGV("status=%d eventval=%" PRIu64, status, eventVal);
+	            desktop->processCursor();
                 desktop->processFrames();
             }
 

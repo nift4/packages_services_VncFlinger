@@ -41,6 +41,7 @@ class AndroidDesktop : public rfb::SDesktop,
     virtual void handleClipboardData(const char* data);
     virtual void notifyClipboardChanged();
     virtual void setCursor(uint32_t width, uint32_t height, int hotX, int hotY, const rdr::U8* buffer);
+	virtual void processCursor();
 
     virtual unsigned int setScreenLayout(int fb_width, int fb_height, const rfb::ScreenSet& layout);
 
@@ -84,8 +85,10 @@ class AndroidDesktop : public rfb::SDesktop,
 
     // Pixel buffer
     sp<AndroidPixelBuffer> mPixels = NULL;
+	bool frameChanged = false;
 
-    // Primary display
+
+	// Primary display
     ui::Size mDisplayMode = {};
     ui::Rotation mDisplayState = {};
 

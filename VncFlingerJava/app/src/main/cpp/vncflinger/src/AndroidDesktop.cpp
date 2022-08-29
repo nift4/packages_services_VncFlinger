@@ -95,9 +95,22 @@ void AndroidDesktop::setCursor(uint32_t width, uint32_t height, int hotX, int ho
                                const rdr::U8* buffer) {
     cursorChanged = true;
     cur_width = width; cur_height = height; cur_buffer = buffer; cur_hotX = hotX; cur_hotY = hotY;
+    notify();
+}
+
+void AndroidDesktop::processCursor() {
+    if (!cursorChanged)
+        return;
+    cursorChanged = false;
+
+    mServer->setCursor(cur_width, cur_height, rfb::Point(cur_hotX, cur_hotY), cur_buffer);
 }
 
 void AndroidDesktop::processFrames() {
+    if (!frameChanged)
+        return;
+    frameChanged = false;
+
     Mutex::Autolock _l(mLock);
 
     updateDisplayInfo();
@@ -127,8 +140,6 @@ void AndroidDesktop::processFrames() {
 
     // update clients
     mServer->add_changed(bufRect);
-
-    if (cursorChanged) mServer->setCursor(cur_width, cur_height, rfb::Point(cur_hotX, cur_hotY), cur_buffer);
 }
 
 // notifies the server loop that we have changes
@@ -173,6 +184,7 @@ unsigned int AndroidDesktop::setScreenLayout(int reqWidth, int reqHeight,
 // cpuconsumer frame listener, called from binder thread
 void AndroidDesktop::onFrameAvailable(const BufferItem& item) {
     //ALOGV("onFrameAvailable: [%" PRIu64 "] mTimestamp=%" PRId64, item.mFrameNumber, item.mTimestamp);
+    frameChanged = true;
 
     notify();
 }

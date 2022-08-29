@@ -318,7 +318,7 @@ int old_main2() {
                     delete (*i);
                 } else {
                     FD_SET((*i)->getFd(), &rfds);
-                    if ((*i)->outStream().bufferUsage() > 0) {
+                    if ((*i)->outStream().hasBufferedData()) {
                         FD_SET((*i)->getFd(), &wfds);
                     }
                     clients_connected++;
@@ -349,7 +349,6 @@ int old_main2() {
                 if (FD_ISSET((*i)->getFd(), &rfds)) {
                     network::Socket* sock = (*i)->accept();
                     if (sock) {
-                        sock->outStream().setBlocking(false);
                         server.addSocket(sock);
                     } else {
                         ALOGW("Client connection rejected");

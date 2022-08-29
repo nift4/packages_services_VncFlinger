@@ -43,12 +43,11 @@ void AndroidPixelBuffer::setBufferRotation(bool rotated) {
     if (rotated != mRotated) {
         ALOGV("Orientation changed, swap width/height");
         mRotated = rotated;
-        setSize(height_, width_);
+        setSize(height(), width());
         std::swap(mScaleX, mScaleY);
-        stride = width_;
 
         if (mListener != nullptr) {
-            mListener->onBufferDimensionsChanged(width_, height_);
+            mListener->onBufferDimensionsChanged(width(), height());
         }
     }
 }
@@ -72,17 +71,17 @@ void AndroidPixelBuffer::updateBufferSize(bool fromDisplay) {
     mScaleX = (float)mClientWidth / (float)mSourceWidth;
     mScaleY = (float)mClientHeight / (float)mSourceHeight;
 
-    if (w == (uint32_t)width_ && h == (uint32_t)height_) {
+    if (w == (uint32_t)width() && h == (uint32_t)height()) {
         return;
     }
 
-    ALOGV("Buffer dimensions changed: old=(%dx%d) new=(%dx%d) scaleX=%f scaleY=%f", width_, height_,
+    ALOGV("Buffer dimensions changed: old=(%dx%d) new=(%dx%d) scaleX=%f scaleY=%f", width(), height(),
           w, h, mScaleX, mScaleY);
 
     setSize(w, h);
 
     if (mListener != nullptr) {
-        mListener->onBufferDimensionsChanged(width_, height_);
+        mListener->onBufferDimensionsChanged(width(), height());
     }
 }
 

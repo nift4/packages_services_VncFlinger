@@ -107,6 +107,10 @@ void AndroidDesktop::processCursor() {
 }
 
 void AndroidDesktop::processFrames() {
+    if (mVirtualDisplay == NULL)
+        return;
+    if (mPixels == NULL)
+        return;
     if (!frameChanged)
         return;
     frameChanged = false;
@@ -207,7 +211,7 @@ void AndroidDesktop::pointerEvent(const rfb::Point& pos, int buttonMask) {
 
     ALOGV("pointer xlate x1=%d y1=%d x2=%d y2=%d", pos.x, pos.y, x, y);
 
-    mServer->setCursorPos(rfb::Point(x, y));
+    mServer->setCursorPos(rfb::Point(x, y), false);
     mInputDevice->pointerEvent(buttonMask, x, y);
 }
 

@@ -94,7 +94,12 @@ void AndroidDesktop::notifyClipboardChanged() {
 void AndroidDesktop::setCursor(uint32_t width, uint32_t height, int hotX, int hotY,
                                const rdr::U8* buffer) {
     cursorChanged = true;
-    cur_width = width; cur_height = height; cur_buffer = buffer; cur_hotX = hotX; cur_hotY = hotY;
+    cur_width = width; cur_height = height;
+    std::size_t len = width * height * width * 4 * sizeof(rdr::U8);
+    rdr::U8* buftmp = (rdr::U8*)malloc(len);
+    cur_buffer = buftmp;
+    memcpy(buftmp, buffer, len);
+    cur_hotX = hotX; cur_hotY = hotY;
     notify();
 }
 

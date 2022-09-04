@@ -32,26 +32,27 @@ public class VncFlinger extends Service {
 	}
 	public final int ONGOING_NOTIFICATION_ID = 5;
 	public final String CHANNEL_ID = "services";
+	public final String LOG_TAG = "VNCFlinger";
 
-	public VirtualDisplay display;
+	public VirtualDisplay mDisplay;
 	public ClipboardManager mClipboard;
-	public boolean isInternal;
-	public boolean audio;
-	public boolean allowResize;
-	public boolean touch;
-	public boolean relative;
-	public boolean remoteCursor;
-	public int w;
-	public int h;
-	public int dpi;
-	public String[] args;
-	public String[] aargs;
+	public boolean mMirrorInternal;
+	public boolean mHasAudio;
+	public boolean mAllowResize;
+	public boolean mEmulateTouch;
+	public boolean mUseRelativeInput;
+	public boolean mRemoteCursor;
+	public int mWidth;
+	public int mHeight;
+	public int mDPI;
+	public String[] mVNCFlingerArgs;
+	public String[] mAudioStreamerArgs;
 	public PointerIcon mOldPointerIcon;
 	public int mOldPointerIconId;
 
-	public boolean nIntentEnable;
-	public String nIntentPkg;
-	public String nIntentComponent;
+	public boolean mIntentEnable;
+	public String mIntentPkg;
+	public String mIntentComponent;
 
 	private Context mContext;
 
@@ -61,40 +62,46 @@ public class VncFlinger extends Service {
 		super.onStartCommand(intent, flags, startId);
 
 		mContext = this;
-		w = intent.getIntExtra("width", -1);
-		h = intent.getIntExtra("height", -1);
-		dpi = intent.getIntExtra("dpi", -1);
-		touch = intent.getBooleanExtra("touch", false);
-		relative = intent.getBooleanExtra("useRelativeInput", false);
-		isInternal = intent.getBooleanExtra("isInternal", false);
-		allowResize = intent.getBooleanExtra("allowResize", false);
-		audio = intent.getBooleanExtra("audio", true);
-		remoteCursor = intent.getBooleanExtra("remoteCursor", false);
-		nIntentEnable = intent.getBooleanExtra("nIntentEnable", false);
-		nIntentPkg = intent.getStringExtra("nIntentPkg");
-		nIntentComponent = intent.getStringExtra("nIntentComponent");
-		if ((w < 0 || h < 0 || dpi < 0) && !isInternal) {
+		mWidth = intent.getIntExtra("width", -1);
+		mHeight = intent.getIntExtra("height", -1);
+		mDPI = intent.getIntExtra("dpi", -1);
+		mEmulateTouch = intent.getBooleanExtra("emulateTouch", false);
+		mUseRelativeInput = intent.getBooleanExtra("useRelativeInput", false);
+		mMirrorInternal = intent.getBooleanExtra("mirrorInternal", false);
+		mAllowResize = intent.getBooleanExtra("allowResize", false);
+		mHasAudio = intent.getBooleanExtra("hasAudio", true);
+		mRemoteCursor = intent.getBooleanExtra("remoteCursor", false);
+		mIntentEnable = intent.getBooleanExtra("intentEnable", false);
+		mIntentPkg = intent.getStringExtra("intentPkg");
+		mIntentComponent = intent.getStringExtra("intentComponent");
+		if ((mWidth < 0 || mHeight < 0 || mDPI < 0) && !mMirrorInternal) {
 			throw new IllegalStateException("invalid extras");
 		}
 
-		args = new String[] { "vncflinger", "-rfbunixandroid", "0", "-rfbunixpath", "@vncflinger", "-SecurityTypes", "None" };
-		aargs = new String[] { "audiostreamer", "-u", "@audiostreamer" };
+		mVNCFlingerArgs = new String[] { "vncflinger", "-rfbunixandroid", "0", "-rfbunixpath", "@vncflinger", "-SecurityTypes",
+				"None" };
+		mAudioStreamerArgs = new String[] { "audiostreamer", "-u", "@audiostreamer" };
 
-		if (!isInternal)
-			display = ((DisplayManager)getSystemService(DISPLAY_SERVICE))
-					.createVirtualDisplay("VNC", w, h, dpi, null,
-							VIRTUAL_DISPLAY_FLAG_SECURE | VIRTUAL_DISPLAY_FLAG_PUBLIC | VIRTUAL_DISPLAY_FLAG_TRUSTED | VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH | VIRTUAL_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS);
-		mClipboard = (ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
+		if (!mMirrorInternal)
+			mDisplay = ((DisplayManager) getSystemService(DISPLAY_SERVICE))
+					.createVirtualDisplay("VNC", 
+							mWidth, mHeight, mDPI, null,
+							VIRTUAL_DISPLAY_FLAG_SECURE | VIRTUAL_DISPLAY_FLAG_PUBLIC | VIRTUAL_DISPLAY_FLAG_TRUSTED
+									| VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH
+									| VIRTUAL_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS);
+		mClipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
 		mClipboard.addPrimaryClipChangedListener(() -> {
-			if (mClipboard.hasPrimaryClip() && mClipboard.getPrimaryClipDescription().hasMimeType(MIMETYPE_TEXT_PLAIN)) {
+			if (mClipboard.hasPrimaryClip()
+					&& mClipboard.getPrimaryClipDescription().hasMimeType(MIMETYPE_TEXT_PLAIN)) {
 				notifyServerClipboardChanged();
 			}
 		});
 
-		new Thread(this::workerThread).start();
-		if (audio) new Thread(this::audioThread).start();
+		new Thread(this::VncThread).start();
+		if (mHasAudio)
+			new Thread(this::audioThread).start();
 
-		if (remoteCursor) {
+		if (mRemoteCursor) {
 			InputManager inputManager = ((InputManager) getSystemService(INPUT_SERVICE));
 			inputManager.registerCursorCallback(new ICursorCallback.Stub() {
 				@Override
@@ -103,7 +110,7 @@ public class VncFlinger extends Service {
 						return;
 
 					if (icon == null) {
-						Context content = mContext.createDisplayContext(display.getDisplay());
+						Context content = mContext.createDisplayContext(mDisplay.getDisplay());
 						icon = PointerIcon.getSystemIcon(content, iconId).load(content);
 					}
 					if ((mOldPointerIcon != null) && mOldPointerIcon.equals(icon))
@@ -127,14 +134,13 @@ public class VncFlinger extends Service {
 			channel.setBlockable(true);
 			notificationManager.createNotificationChannel(channel);
 		}
-		Notification.Builder notification =
-				new Notification.Builder(this, CHANNEL_ID)
-						.setContentTitle(getText(R.string.notification_title))
-						.setContentText(getString(R.string.notification_message, getText(R.string.app_name)))
-						.setSmallIcon(R.drawable.ic_desktop);
-		if (nIntentEnable) {
+		Notification.Builder notification = new Notification.Builder(this, CHANNEL_ID)
+				.setContentTitle(getText(R.string.notification_title))
+				.setContentText(getString(R.string.notification_message, getText(R.string.app_name)))
+				.setSmallIcon(R.drawable.ic_desktop);
+		if (mIntentEnable) {
 			Intent i = new Intent();
-			i.setComponent(new ComponentName(nIntentPkg, nIntentComponent));
+			i.setComponent(new ComponentName(mIntentPkg, mIntentComponent));
 			notification.setContentIntent(PendingIntent.getActivity(mContext, 0, i, PendingIntent.FLAG_IMMUTABLE));
 		}
 		startForeground(ONGOING_NOTIFICATION_ID, notification.build());
@@ -159,10 +165,13 @@ public class VncFlinger extends Service {
 	}
 
 	private void cleanup() {
-		if (remoteCursor) ((InputManager) getSystemService(INPUT_SERVICE)).setForceNullCursor(false);
+		if (mRemoteCursor)
+			((InputManager) getSystemService(INPUT_SERVICE)).setForceNullCursor(false);
 		quit();
-		if (display != null) display.release();
-		if (audio) endAudioStreamer();
+		if (mDisplay != null)
+			mDisplay.release();
+		if (mHasAudio)
+			endAudioStreamer();
 	}
 
 	private void onError(int exitCode) {
@@ -170,61 +179,66 @@ public class VncFlinger extends Service {
 		throw new IllegalStateException("VNCFlinger died, exit code " + exitCode);
 	}
 
-	private void workerThread() {
+	private void VncThread() {
 		int exitCode;
-		if ((exitCode = initializeVncFlinger(args)) == 0) {
+		if ((exitCode = initializeVncFlinger(mVNCFlingerArgs)) == 0) {
 			doSetDisplayProps();
-			if ((exitCode = mainLoop()) == 0) {
-                stopForeground(STOP_FOREGROUND_REMOVE);
+			if ((exitCode = startService()) == 0) {
+				stopForeground(STOP_FOREGROUND_REMOVE);
 				return;
-            }
+			}
 		}
 		onError(exitCode);
 	}
 
 	private void audioThread() {
 		int exitCode;
-		if ((exitCode = startAudioStreamer(aargs)) != 0) {
+		if ((exitCode = startAudioStreamer(mAudioStreamerArgs)) != 0) {
 			onError(exitCode);
 		}
 	}
 
 	private void doSetDisplayProps() {
-		setDisplayProps(isInternal ? -1 : w, isInternal ? -1 : h, isInternal ? -1 : display.getDisplay().getRotation() * 90, isInternal ? 0 : -1, touch, relative);
+		setDisplayProps(mMirrorInternal ? -1 : mWidth, mMirrorInternal ? -1 : mHeight,
+				mMirrorInternal ? -1 : mDisplay.getDisplay().getRotation() * 90, mMirrorInternal ? 0 : -1, 
+				mEmulateTouch, mUseRelativeInput);
 	}
 
-	//used from native
-	private void callback() {
+	// used from native
+	private void onNewSurfaceAvailable() {
 		doSetDisplayProps();
-		if (isInternal) return;
-		Log.i("VNCFlinger", "new surface");
+		if (mMirrorInternal)
+			return;
+
+		Log.d(LOG_TAG, "Found New surface");
 		Surface s = getSurface();
 		if (s == null)
-			Log.i("VNCFlinger", "new surface is null");
+			Log.i(LOG_TAG, "New surface is null");
 		try {
-			display.setSurface(s);
+			mDisplay.setSurface(s);
 		} catch (NullPointerException unused) {
-			Log.w("VNCFlinger", "Failed to set new surface");
+			Log.w(LOG_TAG, "Failed to set new surface");
 		}
 	}
 
-	//used from native
-	private void resize(int w, int h) {
-		if (!allowResize)
+	// used from native
+	private void onResizeDisplay(int width, int height) {
+		if (!mAllowResize)
 			return;
-		Log.i("VNCFlinger", "resize " + this.w + "x" + this.h + " to " + w + "*" + h);
-		this.w = w; this.h = h;
-		display.resize(w, h, dpi);
+		Log.i(LOG_TAG, "Resizing " + this.mWidth + "*" + this.mHeight + " to " + width + "*" + height);
+		this.mWidth = width;
+		this.mHeight = height;
+		mDisplay.resize(width, height, mDPI);
 		doSetDisplayProps();
 	}
 
-	//used from native
+	// used from native
 	private void setServerClipboard(String text) {
 		ClipData clip = ClipData.newPlainText("VNCFlinger", text);
 		mClipboard.setPrimaryClip(clip);
 	}
 
-	//used from native
+	// used from native
 	private String getServerClipboard() {
 		String text = "";
 		if (mClipboard.hasPrimaryClip() && mClipboard.getPrimaryClipDescription().hasMimeType(MIMETYPE_TEXT_PLAIN)) {
@@ -235,19 +249,27 @@ public class VncFlinger extends Service {
 			ClipData.Item item = clipData.getItemAt(i);
 			text = item.getText().toString();
 		} else if (mClipboard.hasPrimaryClip()) {
-			Log.w("VNCFlinger:Clipboard", "cannot paste :(");
+			Log.w(LOG_TAG, "Clipboard cannot paste :(");
 		}
 
 		return text;
 	}
 
 	private native int initializeVncFlinger(String[] commandLineArgs);
-	private native void setDisplayProps(int w, int h, int rotation, int layerId, boolean touch, boolean relative);
-	private native int mainLoop();
+
+	private native void setDisplayProps(int width, int height, int rotation, int layerId, boolean emulateTouch, boolean useRelativeInput);
+
+	private native int startService();
+
 	private native void quit();
+
 	private native Surface getSurface();
+
 	private native void notifyServerClipboardChanged();
+
 	private native int startAudioStreamer(String[] commandLineArgs);
+
 	private native void endAudioStreamer();
+
 	private native void notifyServerCursorChanged(PointerIcon icon);
 }

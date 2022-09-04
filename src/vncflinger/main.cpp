@@ -48,8 +48,8 @@ static rfb::IntParameter rfbunixmode("rfbunixmode", "Unix socket access mode", 0
 static sp<AndroidDesktop> desktop = NULL;
 static JNIEnv* gEnv;
 static jobject gThiz;
-static jmethodID gMethod;
-static jmethodID gMethodResize;
+static jmethodID gMethodNewSurfaceAvailable;
+static jmethodID gMethodResizeDisplay;
 static jmethodID gMethodSetClipboard;
 static jmethodID gMethodGetClipboard;
 
@@ -67,12 +67,12 @@ static void CleanupSignalHandler(int)
     exit(1);
 }
 
-void runJniCallback() {
-	gEnv->CallVoidMethod(gThiz, gMethod);
+void runJniCallbackNewSurfaceAvailable() {
+    gEnv->CallVoidMethod(gThiz, gMethodNewSurfaceAvailable);
 }
 
-void runJniCallbackResize(int32_t w, int32_t h) {
-	gEnv->CallVoidMethod(gThiz, gMethodResize, w, h);
+void runJniCallbackResizeDisplay(int32_t width, int32_t height) {
+    gEnv->CallVoidMethod(gThiz, gMethodResizeDisplay, width, height);
 }
 
 void runJniCallbackSetClipboard(const char* text) {
@@ -81,7 +81,7 @@ void runJniCallbackSetClipboard(const char* text) {
     gEnv->DeleteLocalRef(jtext);
 }
 
-const char* getJniCallbackGetClipboard() {
+const char* runJniCallbackGetClipboard() {
     jstring jtext = (jstring)gEnv->CallObjectMethod(gThiz, gMethodGetClipboard);
     const char* text = gEnv->GetStringUTFChars(jtext, NULL);
     char* result = strdup(text);
@@ -90,8 +90,8 @@ const char* getJniCallbackGetClipboard() {
     return result;
 }
 
-int old_main1(int argc, char** argv);
-int old_main2();
+int desktopSetup(int argc, char** argv);
+int startService();
 
 extern "C" void Java_org_eu_droid_1ng_vncflinger_VncFlinger_notifyServerCursorChanged(
     JNIEnv* env, jobject thiz, jobject pointerIconObj) {
@@ -129,11 +129,12 @@ extern "C" jint Java_org_eu_droid_1ng_vncflinger_VncFlinger_initializeVncFlinger
 	}
 	env->DeleteLocalRef(command_line_args);
 	gThiz = thiz; gEnv = env;
-	gMethod = env->GetMethodID(env->GetObjectClass(thiz), "callback", "()V");
-	gMethodResize = env->GetMethodID(env->GetObjectClass(thiz), "resize", "(II)V");
-	gMethodSetClipboard = env->GetMethodID(env->GetObjectClass(thiz), "setServerClipboard", "(Ljava/lang/String;)V");
+    gMethodNewSurfaceAvailable =
+        env->GetMethodID(env->GetObjectClass(thiz), "onNewSurfaceAvailable", "()V");
+    gMethodResizeDisplay = env->GetMethodID(env->GetObjectClass(thiz), "onResizeDisplay", "(II)V");
+    gMethodSetClipboard = env->GetMethodID(env->GetObjectClass(thiz), "setServerClipboard", "(Ljava/lang/String;)V");
     gMethodGetClipboard = env->GetMethodID(env->GetObjectClass(thiz), "getServerClipboard", "()Ljava/lang/String;");
-	return old_main1(argc, argv);
+	return desktopSetup(argc, argv);
 }
 
 extern "C" jobject Java_org_eu_droid_1ng_vncflinger_VncFlinger_getSurface(JNIEnv * env,
@@ -165,10 +166,8 @@ extern "C" jobject Java_org_eu_droid_1ng_vncflinger_VncFlinger_getSurface(JNIEnv
 	return a;
 }
 
-extern "C" jint Java_org_eu_droid_1ng_vncflinger_VncFlinger_mainLoop(JNIEnv * env,
-                                                                       jobject thiz
-) {
-	return old_main2();
+extern "C" jint Java_org_eu_droid_1ng_vncflinger_VncFlinger_startService(JNIEnv* env, jobject thiz) {
+    return startService();
 }
 
 extern "C" void Java_org_eu_droid_1ng_vncflinger_VncFlinger_quit(JNIEnv *env, jobject thiz) {
@@ -195,7 +194,7 @@ extern "C" void Java_org_eu_droid_1ng_vncflinger_VncFlinger_notifyServerClipboar
     desktop->notifyClipboardChanged();
 }
 
-int old_main1(int argc, char** argv) {
+int desktopSetup(int argc, char** argv) {
 	rfb::initAndroidLogger();
 	rfb::LogWriter::setLogParams("*:android:30");
 
@@ -245,15 +244,12 @@ int old_main1(int argc, char** argv) {
 
 	return 0;
 }
-int old_main2() {
+
+int startService() {
 	property_get("ro.build.product", gSerialNo, "");
-#ifdef DESKTOP_NAME
-	std::string desktopName = DESKTOP_NAME;
-#else
 	std::string desktopName = "VNCFlinger";
 	desktopName += " @ ";
 	desktopName += (const char *) gSerialNo;
-#endif
 
     sp<ProcessState> self = ProcessState::self();
     self->startThreadPool();

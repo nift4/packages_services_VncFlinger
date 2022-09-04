@@ -21,10 +21,10 @@
 using namespace vncflinger;
 using namespace android;
 //main.cpp
-extern void runJniCallback();
-extern void runJniCallbackResize(int32_t w, int32_t h);
+extern void runJniCallbackNewSurfaceAvailable();
+extern void runJniCallbackResizeDisplay(int32_t w, int32_t h);
 extern void runJniCallbackSetClipboard(const char* text);
-extern const char* getJniCallbackGetClipboard();
+extern const char* runJniCallbackGetClipboard();
 
 AndroidDesktop::AndroidDesktop() {
     mDisplayRect = Rect(0, 0);
@@ -35,7 +35,7 @@ AndroidDesktop::AndroidDesktop() {
         return;
     }
 
-    runJniCallback();
+    runJniCallbackNewSurfaceAvailable();
 }
 
 AndroidDesktop::~AndroidDesktop() {
@@ -71,11 +71,11 @@ void AndroidDesktop::stop() {
     mPixels.clear();
     mInputDevice->stop();
 
-    runJniCallback();
+    runJniCallbackNewSurfaceAvailable();
 }
 
 void AndroidDesktop::handleClipboardRequest() {
-    const char* data = getJniCallbackGetClipboard();
+    const char* data = runJniCallbackGetClipboard();
     if (strlen(data)) mServer->sendClipboardData(data);
 }
 
@@ -161,7 +161,7 @@ void AndroidDesktop::notify() {
 unsigned int AndroidDesktop::setScreenLayout(int reqWidth, int reqHeight,
                                              const rfb::ScreenSet& layout) {
 	if (mLayerId < 0) {
-        runJniCallbackResize(reqWidth, reqHeight);
+        runJniCallbackResizeDisplay(reqWidth, reqHeight);
         // if we return success, we crash because the mode change took too long.
         return rfb::resultInvalid;
     }
@@ -275,7 +275,7 @@ void AndroidDesktop::onBufferDimensionsChanged(uint32_t width, uint32_t height) 
     mVirtualDisplay.clear();
     mVirtualDisplay = new VirtualDisplay(&mDisplayMode,  &mDisplayState,
                                          mPixels->width(), mPixels->height(), mLayerId, this);
-    runJniCallback();
+    runJniCallbackNewSurfaceAvailable();
 
     mDisplayRect = mVirtualDisplay->getDisplayRect();
 

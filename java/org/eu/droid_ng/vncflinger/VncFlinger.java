@@ -164,6 +164,22 @@ public class VncFlinger extends Service {
 		return null;
 	}
 
+	private void changeDPI(int dpi) {
+		Log.i(LOG_TAG, "Changing DPI from " + mDPI + " to " + dpi);
+		mDPI = dpi;
+		mDisplay.resize(mWidth, mHeight, mDPI);
+	}
+
+	private void resizeResolution(int width, int height, int dpi) {
+		Log.i(LOG_TAG, "Resizing Resolution from" + this.mWidth + "x" + this.mHeight + " to " + width + "x" + height);
+		this.mWidth = width;
+		this.mHeight = height;
+		if (dpi != -1)
+			mDPI = dpi;
+		mDisplay.resize(width, height, mDPI);
+		doSetDisplayProps();
+	}
+
 	private void cleanup() {
 		if (mRemoteCursor)
 			((InputManager) getSystemService(INPUT_SERVICE)).setForceNullCursor(false);
@@ -225,11 +241,7 @@ public class VncFlinger extends Service {
 	private void onResizeDisplay(int width, int height) {
 		if (!mAllowResize)
 			return;
-		Log.i(LOG_TAG, "Resizing " + this.mWidth + "*" + this.mHeight + " to " + width + "*" + height);
-		this.mWidth = width;
-		this.mHeight = height;
-		mDisplay.resize(width, height, mDPI);
-		doSetDisplayProps();
+		resizeResolution(width, height, -1);
 	}
 
 	// used from native

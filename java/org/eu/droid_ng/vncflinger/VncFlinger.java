@@ -71,7 +71,7 @@ public class VncFlinger extends Service {
 		mMirrorInternal = intent.getBooleanExtra("mirrorInternal", false);
 		mAllowResize = intent.getBooleanExtra("allowResize", false);
 		mHasAudio = intent.getBooleanExtra("hasAudio", true);
-		mRemoteCursor = intent.getBooleanExtra("remoteCursor", false);
+		mRemoteCursor = intent.getBooleanExtra("remoteCursor", true);
 		mIntentEnable = intent.getBooleanExtra("intentEnable", false);
 		mIntentPkg = intent.getStringExtra("intentPkg");
 		mIntentComponent = intent.getStringExtra("intentComponent");

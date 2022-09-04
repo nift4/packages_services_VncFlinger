@@ -147,8 +147,8 @@ public class VncFlinger extends Service {
 		if (mHasAudio)
 			new Thread(this::audioThread).start();
 
+		InputManager inputManager = ((InputManager) getSystemService(INPUT_SERVICE));
 		if (mRemoteCursor) {
-			InputManager inputManager = ((InputManager) getSystemService(INPUT_SERVICE));
 			inputManager.registerCursorCallback(new ICursorCallback.Stub() {
 				@Override
 				public void onCursorChanged(int iconId, PointerIcon icon) throws RemoteException {
@@ -168,6 +168,8 @@ public class VncFlinger extends Service {
 				}
 			});
 			inputManager.setForceNullCursor(true);
+		} else {
+			inputManager.setForceNullCursor(false);
 		}
 
 		NotificationManager notificationManager = getSystemService(NotificationManager.class);

@@ -24,6 +24,8 @@ import android.util.Log;
 import android.view.PointerIcon;
 import android.view.Surface;
 
+import org.eu.droid_ng.vncflinger.IVncFlinger;
+
 public class VncFlinger extends Service {
 
 	static {
@@ -169,7 +171,7 @@ public class VncFlinger extends Service {
 
 	@Override
 	public IBinder onBind(Intent intent) {
-		return null;
+		return mBinder;
 	}
 
 	private void changeDPI(int dpi) {
@@ -187,6 +189,14 @@ public class VncFlinger extends Service {
 		mDisplay.resize(width, height, mDPI);
 		doSetDisplayProps();
 	}
+
+	private final IVncFlinger.Stub mBinder = new IVncFlinger.Stub() {
+
+		@Override
+		public boolean isRunning() throws RemoteException {
+			return mIsRunning;
+		}
+	};
 
 	private void cleanup() {
 		if (mRemoteCursor)

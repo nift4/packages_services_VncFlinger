@@ -17,4 +17,5 @@ android_app {
         "libjni_vncflinger",
         "libjni_audiostreamer",
     ],
+    static_libs: ["VncFlinger_aidl-java"],
 }

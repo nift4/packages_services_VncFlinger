@@ -55,6 +55,7 @@ public class VncFlinger extends Service {
 	public String mIntentComponent;
 
 	private Context mContext;
+	public boolean mIsRunning;
 
 	@SuppressLint("ServiceCast")
 	@Override
@@ -76,6 +77,11 @@ public class VncFlinger extends Service {
 		mIntentComponent = intent.getStringExtra("intentComponent");
 		if ((mWidth < 0 || mHeight < 0 || mDPI < 0) && !mMirrorInternal) {
 			throw new IllegalStateException("invalid extras");
+		}
+
+		if (mIsRunning) {
+			Log.w(LOG_TAG, "VNCFlinger already running");
+			return START_NOT_STICKY;
 		}
 
 		mVNCFlingerArgs = new String[] { "vncflinger", "-rfbunixandroid", "0", "-rfbunixpath", "@vncflinger", "-SecurityTypes",
@@ -144,6 +150,8 @@ public class VncFlinger extends Service {
 			notification.setContentIntent(PendingIntent.getActivity(mContext, 0, i, PendingIntent.FLAG_IMMUTABLE));
 		}
 		startForeground(ONGOING_NOTIFICATION_ID, notification.build());
+
+		mIsRunning = true;
 		return START_NOT_STICKY;
 	}
 
@@ -188,6 +196,7 @@ public class VncFlinger extends Service {
 			mDisplay.release();
 		if (mHasAudio)
 			endAudioStreamer();
+		mIsRunning = false;
 	}
 
 	private void onError(int exitCode) {

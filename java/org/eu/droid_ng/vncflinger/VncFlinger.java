@@ -65,25 +65,63 @@ public class VncFlinger extends Service {
 		super.onStartCommand(intent, flags, startId);
 
 		mContext = this;
-		mWidth = intent.getIntExtra("width", -1);
-		mHeight = intent.getIntExtra("height", -1);
-		mDPI = intent.getIntExtra("dpi", -1);
-		mEmulateTouch = intent.getBooleanExtra("emulateTouch", false);
-		mUseRelativeInput = intent.getBooleanExtra("useRelativeInput", false);
-		mMirrorInternal = intent.getBooleanExtra("mirrorInternal", false);
-		mAllowResize = intent.getBooleanExtra("allowResize", false);
-		mHasAudio = intent.getBooleanExtra("hasAudio", true);
-		mRemoteCursor = intent.getBooleanExtra("remoteCursor", true);
-		mIntentEnable = intent.getBooleanExtra("intentEnable", false);
-		mIntentPkg = intent.getStringExtra("intentPkg");
-		mIntentComponent = intent.getStringExtra("intentComponent");
-		if ((mWidth < 0 || mHeight < 0 || mDPI < 0) && !mMirrorInternal) {
-			throw new IllegalStateException("invalid extras");
-		}
-
 		if (mIsRunning) {
-			Log.w(LOG_TAG, "VNCFlinger already running");
-			return START_NOT_STICKY;
+			Log.i(LOG_TAG, "VNCFlinger already running");
+			int newWidth = intent.getIntExtra("width", mWidth);
+			int newHeight = intent.getIntExtra("height", mHeight);
+			int newDPI = intent.getIntExtra("dpi", mDPI);
+			boolean newEmulateTouch = intent.getBooleanExtra("emulateTouch", mEmulateTouch);
+			boolean newUseRelativeInput = intent.getBooleanExtra("useRelativeInput", mUseRelativeInput);
+			boolean newMirrorInternal = intent.getBooleanExtra("mirrorInternal", mMirrorInternal);
+			boolean newAllowResize = intent.getBooleanExtra("allowResize", mAllowResize);
+			boolean newHasAudio = intent.getBooleanExtra("hasAudio", mHasAudio);
+			boolean newRemoteCursor = intent.getBooleanExtra("remoteCursor", mRemoteCursor);
+
+			if (newEmulateTouch != mEmulateTouch || newUseRelativeInput != mUseRelativeInput
+					|| newMirrorInternal != mMirrorInternal || newAllowResize != mAllowResize
+					|| newHasAudio != mHasAudio || newRemoteCursor != mRemoteCursor) {
+				mEmulateTouch = newEmulateTouch;
+				mUseRelativeInput = newUseRelativeInput;
+				mMirrorInternal = newMirrorInternal;
+				mAllowResize = newAllowResize;
+				mHasAudio = newHasAudio;
+				mRemoteCursor = newRemoteCursor;
+
+				Log.i(LOG_TAG, "Restarting VNCFlinger");
+				cleanup();
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			} else if (newWidth != mWidth || newHeight != mHeight || newDPI != mDPI) {
+				Log.i(LOG_TAG, "Resizing VNCFlinger");
+				if (newWidth == mWidth && newHeight == mHeight && newDPI != mDPI) {
+					changeDPI(newDPI);
+					return START_NOT_STICKY;
+				}			
+				resizeResolution(newWidth, newHeight, newDPI);
+				return START_NOT_STICKY;
+			} else {
+				Log.i(LOG_TAG, "VNCFlinger already running with same settings");
+				return START_NOT_STICKY;
+			}
+		} else {
+			mWidth = intent.getIntExtra("width", -1);
+			mHeight = intent.getIntExtra("height", -1);
+			mDPI = intent.getIntExtra("dpi", -1);
+			mEmulateTouch = intent.getBooleanExtra("emulateTouch", false);
+			mUseRelativeInput = intent.getBooleanExtra("useRelativeInput", false);
+			mMirrorInternal = intent.getBooleanExtra("mirrorInternal", false);
+			mAllowResize = intent.getBooleanExtra("allowResize", false);
+			mHasAudio = intent.getBooleanExtra("hasAudio", true);
+			mRemoteCursor = intent.getBooleanExtra("remoteCursor", true);
+			mIntentEnable = intent.getBooleanExtra("intentEnable", false);
+			mIntentPkg = intent.getStringExtra("intentPkg");
+			mIntentComponent = intent.getStringExtra("intentComponent");
+			if ((mWidth < 0 || mHeight < 0 || mDPI < 0) && !mMirrorInternal) {
+				throw new IllegalStateException("invalid extras");
+			}
 		}
 
 		mVNCFlingerArgs = new String[] { "vncflinger", "-rfbunixandroid", "0", "-rfbunixpath", "@vncflinger", "-SecurityTypes",

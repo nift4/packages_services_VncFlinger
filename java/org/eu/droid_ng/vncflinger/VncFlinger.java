@@ -153,7 +153,9 @@ public class VncFlinger extends Service {
 						return;
 
 					if (icon == null) {
-						Context content = mContext.createDisplayContext(mDisplay.getDisplay());
+						Context content = mContext;
+						if (!mMirrorInternal)
+							content = mContext.createDisplayContext(mDisplay.getDisplay());
 						icon = PointerIcon.getSystemIcon(content, iconId).load(content);
 					}
 					if ((mOldPointerIcon != null) && mOldPointerIcon.equals(icon))

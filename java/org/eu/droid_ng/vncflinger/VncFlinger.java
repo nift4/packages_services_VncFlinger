@@ -107,9 +107,9 @@ public class VncFlinger extends Service {
 				return START_NOT_STICKY;
 			}
 		} else {
-			mWidth = intent.getIntExtra("width", -1);
-			mHeight = intent.getIntExtra("height", -1);
-			mDPI = intent.getIntExtra("dpi", -1);
+			mWidth = intent.getIntExtra("width", 1280);
+			mHeight = intent.getIntExtra("height", 720);
+			mDPI = intent.getIntExtra("dpi", 160);
 			mEmulateTouch = intent.getBooleanExtra("emulateTouch", false);
 			mUseRelativeInput = intent.getBooleanExtra("useRelativeInput", false);
 			mMirrorInternal = intent.getBooleanExtra("mirrorInternal", false);
@@ -119,9 +119,6 @@ public class VncFlinger extends Service {
 			mIntentEnable = intent.getBooleanExtra("intentEnable", false);
 			mIntentPkg = intent.getStringExtra("intentPkg");
 			mIntentComponent = intent.getStringExtra("intentComponent");
-			if ((mWidth < 0 || mHeight < 0 || mDPI < 0) && !mMirrorInternal) {
-				throw new IllegalStateException("invalid extras");
-			}
 		}
 
 		mVNCFlingerArgs = new String[] { "vncflinger", "-rfbunixandroid", "0", "-rfbunixpath", "@vncflinger", "-SecurityTypes",

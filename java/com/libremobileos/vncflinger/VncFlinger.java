@@ -1,4 +1,4 @@
-package org.eu.droid_ng.vncflinger;
+package com.libremobileos.vncflinger;
 
 import static android.content.ClipDescription.MIMETYPE_TEXT_PLAIN;
 import static android.hardware.display.DisplayManager.*;
@@ -24,7 +24,7 @@ import android.util.Log;
 import android.view.PointerIcon;
 import android.view.Surface;
 
-import org.eu.droid_ng.vncflinger.IVncFlinger;
+import com.libremobileos.vncflinger.IVncFlinger;
 
 public class VncFlinger extends Service {
 

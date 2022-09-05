@@ -93,7 +93,7 @@ const char* runJniCallbackGetClipboard() {
 int desktopSetup(int argc, char** argv);
 int startService();
 
-extern "C" void Java_org_eu_droid_1ng_vncflinger_VncFlinger_notifyServerCursorChanged(
+extern "C" void Java_com_libremobileos_vncflinger_VncFlinger_notifyServerCursorChanged(
     JNIEnv* env, jobject thiz, jobject pointerIconObj) {
     PointerIcon pointerIcon;
 
@@ -115,7 +115,7 @@ extern "C" void Java_org_eu_droid_1ng_vncflinger_VncFlinger_notifyServerCursorCh
     return;
 }
 
-extern "C" jint Java_org_eu_droid_1ng_vncflinger_VncFlinger_initializeVncFlinger(JNIEnv *env,
+extern "C" jint Java_com_libremobileos_vncflinger_VncFlinger_initializeVncFlinger(JNIEnv *env,
                                                                                    jobject thiz,
 																				   jobjectArray command_line_args) {
 	const int argc = env->GetArrayLength(command_line_args);
@@ -137,7 +137,7 @@ extern "C" jint Java_org_eu_droid_1ng_vncflinger_VncFlinger_initializeVncFlinger
 	return desktopSetup(argc, argv);
 }
 
-extern "C" jobject Java_org_eu_droid_1ng_vncflinger_VncFlinger_getSurface(JNIEnv * env,
+extern "C" jobject Java_com_libremobileos_vncflinger_VncFlinger_getSurface(JNIEnv * env,
 																			jobject thiz
 ) {
 	if (desktop == NULL) {
@@ -166,15 +166,15 @@ extern "C" jobject Java_org_eu_droid_1ng_vncflinger_VncFlinger_getSurface(JNIEnv
 	return a;
 }
 
-extern "C" jint Java_org_eu_droid_1ng_vncflinger_VncFlinger_startService(JNIEnv* env, jobject thiz) {
+extern "C" jint Java_com_libremobileos_vncflinger_VncFlinger_startService(JNIEnv* env, jobject thiz) {
     return startService();
 }
 
-extern "C" void Java_org_eu_droid_1ng_vncflinger_VncFlinger_quit(JNIEnv *env, jobject thiz) {
+extern "C" void Java_com_libremobileos_vncflinger_VncFlinger_quit(JNIEnv *env, jobject thiz) {
 	gCaughtSignal = true;
 }
 
-extern "C" void Java_org_eu_droid_1ng_vncflinger_VncFlinger_setDisplayProps(JNIEnv *env,
+extern "C" void Java_com_libremobileos_vncflinger_VncFlinger_setDisplayProps(JNIEnv *env,
                                                                               jobject thiz, jint w,
                                                                               jint h, jint rotation, jint layerId, jboolean touch,
                                                                               jboolean relative) {
@@ -185,7 +185,7 @@ extern "C" void Java_org_eu_droid_1ng_vncflinger_VncFlinger_setDisplayProps(JNIE
 	desktop->_width = w; desktop->_height = h; desktop->_rotation = rotation; desktop->mLayerId = layerId; desktop->touch = touch; desktop->relative = relative;
 }
 
-extern "C" void Java_org_eu_droid_1ng_vncflinger_VncFlinger_notifyServerClipboardChanged(
+extern "C" void Java_com_libremobileos_vncflinger_VncFlinger_notifyServerClipboardChanged(
     JNIEnv* env, jobject thiz) {
     if (desktop == NULL) {
         ALOGW("notifyClipboardChanged: desktop == NULL");

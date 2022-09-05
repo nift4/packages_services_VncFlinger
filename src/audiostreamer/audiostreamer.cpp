@@ -56,7 +56,7 @@ static int audiostreamer_init() {
     ALOGI("%s: sampleRate: %d, channel: %d framecount: %d", __FUNCTION__, sampleRate, channel, (int)framecount);
 
     AttributionSourceState attributionSource;
-    attributionSource.packageName = "org.eu.droid_ng.vncflinger";
+    attributionSource.packageName = "com.libremobileos.vncflinger";
     attributionSource.token = sp<BBinder>::make();
 
     pAudioRecord = new AudioRecord(AUDIO_SOURCE_REMOTE_SUBMIX, sampleRate, AUDIO_FORMAT_PCM_16_BIT,
@@ -209,7 +209,7 @@ int audio_main(int argc, char **argv) {
 }
 
 
-extern "C" jint Java_org_eu_droid_1ng_vncflinger_VncFlinger_startAudioStreamer(JNIEnv *env,
+extern "C" jint Java_com_libremobileos_vncflinger_VncFlinger_startAudioStreamer(JNIEnv *env,
                                                                                jobject thiz,
                                                                                jobjectArray command_line_args) {
     const int argc = env->GetArrayLength(command_line_args);
@@ -226,7 +226,7 @@ extern "C" jint Java_org_eu_droid_1ng_vncflinger_VncFlinger_startAudioStreamer(J
     return audio_main(argc, argv);
 }
 
-extern "C" void Java_org_eu_droid_1ng_vncflinger_VncFlinger_endAudioStreamer(JNIEnv *env,
+extern "C" void Java_com_libremobileos_vncflinger_VncFlinger_endAudioStreamer(JNIEnv *env,
                                                                              jobject thiz) {
     gRunning = false;
 }

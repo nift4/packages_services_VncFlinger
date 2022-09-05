@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <exceptions>
-    <exception package="org.eu.droid_ng.vncflinger">
+    <exception package="com.libremobileos.vncflinger">
         <permission name="android.permission.RECORD_AUDIO" fixed="true"/>
     </exception>
 </exceptions>

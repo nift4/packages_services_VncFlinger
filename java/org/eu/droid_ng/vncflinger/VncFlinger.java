@@ -36,25 +36,32 @@ public class VncFlinger extends Service {
 	public final String CHANNEL_ID = "services";
 	public final String LOG_TAG = "VNCFlinger";
 
+	public boolean mMirrorInternal = false;
+	public boolean mHasAudio = true;
+	public boolean mAllowResize = false;
+	public boolean mEmulateTouch = false;
+	public boolean mUseRelativeInput = false;
+	public boolean mRemoteCursor = true;
+	public boolean mSupportClipboard = true;
+	public int mWidth = 1280;
+	public int mHeight = 720;
+	public int mDPI = 160;
+	public boolean mIntentEnable = false;
+	public String mIntentPkg = null;
+	public String mIntentComponent = null;
+
 	public VirtualDisplay mDisplay;
 	public ClipboardManager mClipboard;
-	public boolean mMirrorInternal;
-	public boolean mHasAudio;
-	public boolean mAllowResize;
-	public boolean mEmulateTouch;
-	public boolean mUseRelativeInput;
-	public boolean mRemoteCursor;
-	public int mWidth;
-	public int mHeight;
-	public int mDPI;
 	public String[] mVNCFlingerArgs;
 	public String[] mAudioStreamerArgs;
 	public PointerIcon mOldPointerIcon;
 	public int mOldPointerIconId;
-
-	public boolean mIntentEnable;
-	public String mIntentPkg;
-	public String mIntentComponent;
+	public ClipboardManager.OnPrimaryClipChangedListener mClipListener = () -> {
+		if (mSupportClipboard && mClipboard.hasPrimaryClip()
+				&& mClipboard.getPrimaryClipDescription().hasMimeType(MIMETYPE_TEXT_PLAIN)) {
+			notifyServerClipboardChanged();
+		}
+	};
 
 	private Context mContext;
 	public boolean mIsRunning;
@@ -76,6 +83,20 @@ public class VncFlinger extends Service {
 			boolean newAllowResize = intent.getBooleanExtra("allowResize", mAllowResize);
 			boolean newHasAudio = intent.getBooleanExtra("hasAudio", mHasAudio);
 			boolean newRemoteCursor = intent.getBooleanExtra("remoteCursor", mRemoteCursor);
+			boolean newSupportClipboard = intent.getBooleanExtra("clipboard", mSupportClipboard);
+
+			if (mSupportClipboard != newSupportClipboard) {
+				Log.i(LOG_TAG, "Updating clipboard listener");
+				if (mClipboard == null) {
+					mClipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+				}
+				if (newSupportClipboard) {
+					mClipboard.addPrimaryClipChangedListener(mClipListener);
+				} else {
+					mClipboard.removePrimaryClipChangedListener(mClipListener);
+				}
+				mSupportClipboard = newSupportClipboard;
+			}
 
 			if (newEmulateTouch != mEmulateTouch || newUseRelativeInput != mUseRelativeInput
 					|| newMirrorInternal != mMirrorInternal || newAllowResize != mAllowResize
@@ -107,16 +128,17 @@ public class VncFlinger extends Service {
 				return START_NOT_STICKY;
 			}
 		} else {
-			mWidth = intent.getIntExtra("width", 1280);
-			mHeight = intent.getIntExtra("height", 720);
-			mDPI = intent.getIntExtra("dpi", 160);
-			mEmulateTouch = intent.getBooleanExtra("emulateTouch", false);
-			mUseRelativeInput = intent.getBooleanExtra("useRelativeInput", false);
-			mMirrorInternal = intent.getBooleanExtra("mirrorInternal", false);
-			mAllowResize = intent.getBooleanExtra("allowResize", false);
-			mHasAudio = intent.getBooleanExtra("hasAudio", true);
-			mRemoteCursor = intent.getBooleanExtra("remoteCursor", true);
-			mIntentEnable = intent.getBooleanExtra("intentEnable", false);
+			mWidth = intent.getIntExtra("width", mWidth);
+			mHeight = intent.getIntExtra("height", mHeight);
+			mDPI = intent.getIntExtra("dpi", mDPI);
+			mEmulateTouch = intent.getBooleanExtra("emulateTouch", mEmulateTouch);
+			mUseRelativeInput = intent.getBooleanExtra("useRelativeInput", mUseRelativeInput);
+			mMirrorInternal = intent.getBooleanExtra("mirrorInternal", mMirrorInternal);
+			mAllowResize = intent.getBooleanExtra("allowResize", mAllowResize);
+			mHasAudio = intent.getBooleanExtra("hasAudio", mHasAudio);
+			mRemoteCursor = intent.getBooleanExtra("remoteCursor", mRemoteCursor);
+			mSupportClipboard = intent.getBooleanExtra("clipboard", mSupportClipboard);
+			mIntentEnable = intent.getBooleanExtra("intentEnable", mIntentEnable);
 			mIntentPkg = intent.getStringExtra("intentPkg");
 			mIntentComponent = intent.getStringExtra("intentComponent");
 		}
@@ -125,22 +147,20 @@ public class VncFlinger extends Service {
 				"None" };
 		mAudioStreamerArgs = new String[] { "audiostreamer", "-u", "@audiostreamer" };
 
-		if (!mMirrorInternal)
+		if (!mMirrorInternal) {
 			mDisplay = ((DisplayManager) getSystemService(DISPLAY_SERVICE))
-					.createVirtualDisplay("VNC", 
+					.createVirtualDisplay("VNC",
 							mWidth, mHeight, mDPI, null,
 							VIRTUAL_DISPLAY_FLAG_SECURE | VIRTUAL_DISPLAY_FLAG_PUBLIC | VIRTUAL_DISPLAY_FLAG_TRUSTED
 									| VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH
 									| VIRTUAL_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS);
-		mClipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-		mClipboard.addPrimaryClipChangedListener(() -> {
-			if (mClipboard.hasPrimaryClip()
-					&& mClipboard.getPrimaryClipDescription().hasMimeType(MIMETYPE_TEXT_PLAIN)) {
-				notifyServerClipboardChanged();
-			}
-		});
+		}
+		if (mSupportClipboard) {
+			mClipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+			mClipboard.addPrimaryClipChangedListener(mClipListener);
+		}
 
-		new Thread(this::VncThread).start();
+		new Thread(this::vncThread).start();
 		if (mHasAudio)
 			new Thread(this::audioThread).start();
 
@@ -149,7 +169,7 @@ public class VncFlinger extends Service {
 			inputManager.registerCursorCallback(new ICursorCallback.Stub() {
 				@Override
 				public void onCursorChanged(int iconId, PointerIcon icon) throws RemoteException {
-					if (iconId == mOldPointerIconId)
+					if (!mRemoteCursor || iconId == mOldPointerIconId)
 						return;
 
 					if (icon == null) {
@@ -238,9 +258,11 @@ public class VncFlinger extends Service {
 	};
 
 	private void cleanup() {
+		quit();
 		if (mRemoteCursor)
 			((InputManager) getSystemService(INPUT_SERVICE)).setForceNullCursor(false);
-		quit();
+		if (mSupportClipboard)
+			mClipboard.removePrimaryClipChangedListener(mClipListener);
 		if (mDisplay != null)
 			mDisplay.release();
 		if (mHasAudio)
@@ -253,7 +275,7 @@ public class VncFlinger extends Service {
 		throw new IllegalStateException("VNCFlinger died, exit code " + exitCode);
 	}
 
-	private void VncThread() {
+	private void vncThread() {
 		int exitCode;
 		if ((exitCode = initializeVncFlinger(mVNCFlingerArgs)) == 0) {
 			doSetDisplayProps();
@@ -284,13 +306,14 @@ public class VncFlinger extends Service {
 		if (mMirrorInternal)
 			return;
 
-		Log.d(LOG_TAG, "Found New surface");
+		Log.d(LOG_TAG, "Got new surface");
 		Surface s = getSurface();
 		if (s == null)
 			Log.i(LOG_TAG, "New surface is null");
 		try {
 			mDisplay.setSurface(s);
 		} catch (NullPointerException unused) {
+			// NOTE: if we are unlucky, the method will throw an NPE. checking for mDisplay == null is not enough.
 			Log.w(LOG_TAG, "Failed to set new surface");
 		}
 	}

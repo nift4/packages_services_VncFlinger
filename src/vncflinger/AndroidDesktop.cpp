@@ -99,8 +99,8 @@ void AndroidDesktop::setCursor(uint32_t width, uint32_t height, int hotX, int ho
     cur_buffer = buftmp;
     memcpy(buftmp, buffer, len);
     cur_hotX = hotX; cur_hotY = hotY;
-    notify();
     cursorChanged = true;
+    notify();
 }
 
 void AndroidDesktop::processCursor() {

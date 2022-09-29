@@ -16,6 +16,24 @@ android_app {
     required: [
         "libjni_vncflinger",
         "libjni_audiostreamer",
+        "privapp_whitelist_vncflinger.xml",
+        "default-permissions-vncflinger.xml",
     ],
     static_libs: ["VncFlinger_aidl-java"],
+}
+
+prebuilt_etc {
+    name: "privapp_whitelist_vncflinger.xml",
+
+    system_ext_specific: true,
+    src: "etc/privapp_whitelist_vncflinger.xml",
+    sub_dir: "permissions",
+}
+
+prebuilt_etc {
+    name: "default-permissions-vncflinger.xml",
+
+    system_ext_specific: true,
+    src: "etc/default-permissions-vncflinger.xml",
+    sub_dir: "default-permissions",
 }

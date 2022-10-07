@@ -1,5 +1,4 @@
 PRODUCT_PACKAGES += \
-    vncpasswd \
     VncFlinger
 
 SYSTEM_EXT_PRIVATE_SEPOLICY_DIRS += \

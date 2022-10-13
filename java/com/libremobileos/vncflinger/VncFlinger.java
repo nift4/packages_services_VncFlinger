@@ -327,12 +327,17 @@ public class VncFlinger extends Service {
 
 	// used from native
 	private void setServerClipboard(String text) {
+		if (!mSupportClipboard)
+			return;
 		ClipData clip = ClipData.newPlainText("VNCFlinger", text);
 		mClipboard.setPrimaryClip(clip);
 	}
 
 	// used from native
 	private String getServerClipboard() {
+		if (!mSupportClipboard)
+			return "";
+
 		String text = "";
 		if (mClipboard.hasPrimaryClip() && mClipboard.getPrimaryClipDescription().hasMimeType(MIMETYPE_TEXT_PLAIN)) {
 			ClipData clipData = mClipboard.getPrimaryClip();

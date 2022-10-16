@@ -261,7 +261,7 @@ public class VncFlinger extends Service {
 		quit();
 		if (mRemoteCursor)
 			((InputManager) getSystemService(INPUT_SERVICE)).setForceNullCursor(false);
-		if (mSupportClipboard)
+		if (mSupportClipboard && mClipboard != null && mClipListener != null)
 			mClipboard.removePrimaryClipChangedListener(mClipListener);
 		if (mDisplay != null)
 			mDisplay.release();

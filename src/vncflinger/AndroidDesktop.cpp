@@ -88,6 +88,15 @@ void AndroidDesktop::handleClipboardData(const char* data) {
 }
 
 void AndroidDesktop::notifyClipboardChanged() {
+    clipboardChanged = true;
+    notify();
+}
+
+void AndroidDesktop::processClipboard() {
+    if (!clipboardChanged)
+        return;
+    clipboardChanged = false;
+
     if (mServer) mServer->announceClipboard(true);
 }
 

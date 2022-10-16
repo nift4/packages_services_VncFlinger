@@ -40,6 +40,7 @@ class AndroidDesktop : public rfb::SDesktop,
     virtual void handleClipboardAnnounce(bool available);
     virtual void handleClipboardData(const char* data);
     virtual void notifyClipboardChanged();
+	virtual void processClipboard();
     virtual void setCursor(uint32_t width, uint32_t height, int hotX, int hotY, const rdr::U8* buffer);
 	virtual void processCursor();
 
@@ -87,6 +88,7 @@ class AndroidDesktop : public rfb::SDesktop,
     sp<AndroidPixelBuffer> mPixels = NULL;
 	bool frameChanged = false;
 
+	bool clipboardChanged = false;
 
 	// Primary display
     ui::Size mDisplayMode = {};

@@ -200,8 +200,6 @@ int audio_main(int argc, char **argv) {
         } else {
             return usage();
         }
-
-        free(argv[i]);
     }
 
     audiostreamer_create_thread();

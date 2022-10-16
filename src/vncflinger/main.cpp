@@ -167,6 +167,7 @@ extern "C" jobject Java_com_libremobileos_vncflinger_VncFlinger_getSurface(JNIEn
 }
 
 extern "C" jint Java_com_libremobileos_vncflinger_VncFlinger_startService(JNIEnv* env, jobject thiz) {
+	gThiz = thiz; gEnv = env;
     return startService();
 }
 
@@ -233,8 +234,6 @@ int desktopSetup(int argc, char** argv) {
 			}
 			return 2;
 		}
-
-		free(argv[i]);
 
 		ALOGE("Invalid input. i=%d", i);
 		return 5;
